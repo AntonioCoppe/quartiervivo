@@ -40,6 +40,9 @@ const labels = {
     construction: "Construction",
     services: "Services",
     italy: "Italy",
+    available: "Available indicators",
+    unavailable: "Not loaded in this bundle",
+    unavailableExplanation: "Employment, foreign-born, higher education, Gini, origin, and sector tables need additional census sources and remain hidden until those files are loaded.",
     source: "Source",
     share: "Share as card",
     close: "Close panel",
@@ -69,6 +72,9 @@ const labels = {
     construction: "Costruzioni",
     services: "Servizi",
     italy: "Italia",
+    available: "Indicatori disponibili",
+    unavailable: "Non caricati in questo bundle",
+    unavailableExplanation: "Occupazione, nati all'estero, istruzione superiore, Gini, origine e settori richiedono fonti censuarie aggiuntive e restano nascosti finche quei file non sono caricati.",
     source: "Fonte",
     share: "Condividi come card",
     close: "Chiudi pannello",
@@ -82,10 +88,8 @@ export function DetailsPanel({ detail, locale, metric, metrics, onClose }: Detai
   const incomeMetric = metric.group === "income"
     ? metric
     : findMetric(metrics, "income_per_capita") ?? findMetric(metrics, "income_per_taxpayer") ?? metric;
-  const employmentMetric = findMetric(metrics, "employment_rate") ?? syntheticMetric("employment_rate", "percent", metric);
-  const educationMetric = findMetric(metrics, "higher_education_percent") ?? syntheticMetric("higher_education_percent", "percent", metric);
-  const foreignBornMetric = syntheticMetric("foreign_born_percent", "percent", metric);
-  const giniMetric = syntheticMetric("gini_index", "index", metric);
+  const availableTiles = createAvailableTiles(detail, metrics, metric, incomeMetric.id);
+  const unavailableLabels = [copy.employment, copy.foreignBorn, copy.education, copy.gini, copy.origin, copy.sector];
 
   return (
     <aside className="details-panel" aria-label="Selected area details">
@@ -122,40 +126,22 @@ export function DetailsPanel({ detail, locale, metric, metrics, onClose }: Detai
         nationalLabel={copy.italy}
       />
 
-      <div className="detail-grid">
-        <TrendTile
-          detail={detail}
-          label={copy.employment}
-          locale={locale}
-          metric={employmentMetric}
-          metricId="employment_rate"
-          nationalLabel={copy.italy}
-        />
-        <TrendTile
-          detail={detail}
-          label={copy.foreignBorn}
-          locale={locale}
-          metric={foreignBornMetric}
-          metricId="foreign_born_percent"
-          nationalLabel={copy.italy}
-        />
-        <TrendTile
-          detail={detail}
-          label={copy.education}
-          locale={locale}
-          metric={educationMetric}
-          metricId="higher_education_percent"
-          nationalLabel={copy.italy}
-        />
-        <TrendTile
-          detail={detail}
-          label={copy.gini}
-          locale={locale}
-          metric={giniMetric}
-          metricId="gini_index"
-          nationalLabel={copy.italy}
-        />
-      </div>
+      <section className="available-block" aria-label={copy.available}>
+        <h3>{copy.available}</h3>
+        <div className="detail-grid">
+          {availableTiles.map((tile) => (
+            <TrendTile
+              detail={detail}
+              key={tile.metric.id}
+              label={getLocalizedText(tile.metric.label, locale)}
+              locale={locale}
+              metric={tile.metric}
+              metricId={tile.metric.id}
+              nationalLabel={copy.italy}
+            />
+          ))}
+        </div>
+      </section>
 
       <AgeStructure
         labels={[copy.under15, copy.age15To64, copy.age65Plus]}
@@ -168,18 +154,11 @@ export function DetailsPanel({ detail, locale, metric, metrics, onClose }: Detai
         ]}
       />
 
-      <Breakdown title={copy.origin} locale={locale} rows={[
-        [copy.europe, detail.originBreakdown.europe],
-        [copy.americas, detail.originBreakdown.americas],
-        [copy.africa, detail.originBreakdown.africa],
-        [copy.asia, detail.originBreakdown.asia]
-      ]} />
-      <Breakdown title={copy.sector} locale={locale} rows={[
-        [copy.services, detail.sectorBreakdown.services],
-        [copy.industry, detail.sectorBreakdown.industry],
-        [copy.construction, detail.sectorBreakdown.construction],
-        [copy.agriculture, detail.sectorBreakdown.agriculture]
-      ]} />
+      <UnavailableDataNotice
+        explanation={copy.unavailableExplanation}
+        labels={unavailableLabels}
+        title={copy.unavailable}
+      />
 
       <footer>
         <strong>{copy.source}</strong>
@@ -187,6 +166,24 @@ export function DetailsPanel({ detail, locale, metric, metrics, onClose }: Detai
       </footer>
     </aside>
   );
+}
+
+function createAvailableTiles(
+  detail: AreaDetail,
+  metrics: readonly MetricDefinition[],
+  fallback: MetricDefinition,
+  primaryIncomeMetricId: string
+) {
+  return [
+    primaryIncomeMetricId === "income_per_taxpayer" ? "income_per_capita" : "income_per_taxpayer",
+    "taxpayer_share_percent",
+    "age_65_plus_percent",
+    "gender_ratio"
+  ]
+    .map((metricId) => findMetric(metrics, metricId) ?? syntheticMetric(metricId, metricId === "gender_ratio" ? "index" : "percent", fallback))
+    .filter((candidate) => detail.metrics[candidate.id] !== null && detail.metrics[candidate.id] !== undefined)
+    .slice(0, 4)
+    .map((metric) => ({ metric }));
 }
 
 interface TrendMetricProps {
@@ -236,6 +233,28 @@ function TrendTile(props: TrendMetricProps) {
       {series?.nationalValues?.some((item) => item !== null) ? (
         <span className="national-key">--- {props.nationalLabel}</span>
       ) : null}
+    </section>
+  );
+}
+
+function UnavailableDataNotice({
+  explanation,
+  labels: itemLabels,
+  title
+}: {
+  readonly explanation: string;
+  readonly labels: readonly string[];
+  readonly title: string;
+}) {
+  return (
+    <section className="unavailable-data">
+      <h3>{title}</h3>
+      <p>{explanation}</p>
+      <div>
+        {itemLabels.map((label) => (
+          <span key={label}>{label}</span>
+        ))}
+      </div>
     </section>
   );
 }

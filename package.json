@@ -7,14 +7,15 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "npm run data:ensure && vitest run",
+    "test:coverage": "npm run data:ensure && vitest run --coverage",
     "e2e": "playwright test",
     "data:fetch": "node scripts/fetch-national-data.mjs",
     "data:unpack": "node scripts/unpack-national-data.mjs",
     "data:build": "node scripts/build-national-dataset.mjs",
     "data:map": "node scripts/build-map-artifacts.mjs",
-    "data:all": "npm run data:build && npm run data:map"
+    "data:all": "npm run data:build && npm run data:map",
+    "data:ensure": "node scripts/ensure-data-coverage.mjs"
   },
   "dependencies": {
     "lucide-react": "latest",
@@ -28,6 +29,7 @@
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@types/geojson": "latest",
+    "@types/node": "^25.6.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",

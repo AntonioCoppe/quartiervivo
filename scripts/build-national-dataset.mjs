@@ -587,6 +587,22 @@ function createNationalSeries(areas, incomeByYear, populationByYear) {
       years: incomeYears,
       values: incomeYears.map((year) => calculateNationalIncomePerTaxpayer(areas, incomeByYear.get(year)))
     },
+    gender_ratio: {
+      years: populationYears,
+      values: populationYears.map((year) => calculateNationalGenderRatio(areas, populationByYear.get(year)))
+    },
+    age_65_plus_percent: {
+      years: populationYears,
+      values: populationYears.map((year) => calculateNationalWeightedPercent(areas, populationByYear.get(year), "age65PlusPercent"))
+    },
+    age_15_64_percent: {
+      years: populationYears,
+      values: populationYears.map((year) => calculateNationalWeightedPercent(areas, populationByYear.get(year), "age1564Percent"))
+    },
+    age_under_15_percent: {
+      years: populationYears,
+      values: populationYears.map((year) => calculateNationalWeightedPercent(areas, populationByYear.get(year), "ageUnder15Percent"))
+    },
     taxpayer_count: {
       years: incomeYears,
       values: incomeYears.map((year) => sumTaxpayers(areas, incomeByYear.get(year)))
@@ -617,6 +633,18 @@ function createAreaSeries(area, incomeByYear, populationByYear, nationalSeries) 
   const population = populationYears.map((year) =>
     populationByYear.get(year)?.get(area.istatCode)?.population ?? null
   );
+  const genderRatio = populationYears.map((year) =>
+    populationByYear.get(year)?.get(area.istatCode)?.genderRatio ?? null
+  );
+  const age65Plus = populationYears.map((year) =>
+    populationByYear.get(year)?.get(area.istatCode)?.age65PlusPercent ?? null
+  );
+  const age1564 = populationYears.map((year) =>
+    populationByYear.get(year)?.get(area.istatCode)?.age1564Percent ?? null
+  );
+  const ageUnder15 = populationYears.map((year) =>
+    populationByYear.get(year)?.get(area.istatCode)?.ageUnder15Percent ?? null
+  );
   const taxpayerShare = incomeYears.map((year) => {
     const taxpayers = findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode)?.taxpayers ?? null;
     const residents = populationByYear.get(year)?.get(area.istatCode)?.population ?? null;
@@ -639,6 +667,26 @@ function createAreaSeries(area, incomeByYear, populationByYear, nationalSeries) 
       values: incomePerTaxpayer,
       nationalValues: nationalSeries.income_per_taxpayer.values
     },
+    gender_ratio: {
+      years: populationYears,
+      values: genderRatio,
+      nationalValues: nationalSeries.gender_ratio.values
+    },
+    age_65_plus_percent: {
+      years: populationYears,
+      values: age65Plus,
+      nationalValues: nationalSeries.age_65_plus_percent.values
+    },
+    age_15_64_percent: {
+      years: populationYears,
+      values: age1564,
+      nationalValues: nationalSeries.age_15_64_percent.values
+    },
+    age_under_15_percent: {
+      years: populationYears,
+      values: ageUnder15,
+      nationalValues: nationalSeries.age_under_15_percent.values
+    },
     taxpayer_count: {
       years: incomeYears,
       values: taxpayerCount,
@@ -650,6 +698,58 @@ function createAreaSeries(area, incomeByYear, populationByYear, nationalSeries) 
       nationalValues: nationalSeries.taxpayer_share_percent.values
     }
   };
+}
+
+function calculateNationalWeightedPercent(areas, populationIndex, field) {
+  if (!populationIndex) {
+    return null;
+  }
+
+  const totals = areas.reduce(
+    (current, area) => {
+      const profile = populationIndex.get(area.istatCode);
+      const value = profile?.[field] ?? null;
+
+      if (!profile?.population || value === null) {
+        return current;
+      }
+
+      return {
+        weighted: current.weighted + (profile.population * value),
+        population: current.population + profile.population
+      };
+    },
+    { weighted: 0, population: 0 }
+  );
+
+  return totals.population ? roundMetric(totals.weighted / totals.population) : null;
+}
+
+function calculateNationalGenderRatio(areas, populationIndex) {
+  if (!populationIndex) {
+    return null;
+  }
+
+  const totals = areas.reduce(
+    (current, area) => {
+      const profile = populationIndex.get(area.istatCode);
+
+      if (!profile?.population || profile.genderRatio === null) {
+        return current;
+      }
+
+      const female = profile.population / (1 + (profile.genderRatio / 100));
+      const male = profile.population - female;
+
+      return {
+        male: current.male + male,
+        female: current.female + female
+      };
+    },
+    { male: 0, female: 0 }
+  );
+
+  return totals.female ? roundMetric((totals.male / totals.female) * 100) : null;
 }
 
 function sumPopulation(areas, populationIndex) {
