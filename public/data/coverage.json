@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-04-25T16:36:00.095Z",
+  "nationalAreaLevel": "comune",
+  "comuneCount": 7896,
+  "withIncome": 7896,
+  "withPopulation": 7896,
+  "subcomuneCityCount": 0,
+  "areaGeometryCount": 7519,
+  "pmtiles": {
+    "sourceLayer": "areas",
+    "path": "/data/areas.pmtiles",
+    "minzoom": 0,
+    "maxzoom": 10
+  },
+  "metricCount": 10,
+  "sourceBackedMetricCount": 6,
+  "poiCategories": [
+    "schools",
+    "healthcare",
+    "pharmacies",
+    "supermarkets",
+    "transit",
+    "parks"
+  ]
+}

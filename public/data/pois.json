@@ -1,0 +1,74 @@
+[
+  {
+    "id": "poi-roma-school",
+    "name": "Scuola Prati",
+    "category": "schools",
+    "coordinates": [12.472, 41.909],
+    "address": "Prati, Roma",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "amenity": "school" }
+  },
+  {
+    "id": "poi-roma-health",
+    "name": "Clinica Testaccio",
+    "category": "healthcare",
+    "coordinates": [12.482, 41.878],
+    "address": "Testaccio, Roma",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "amenity": "clinic" }
+  },
+  {
+    "id": "poi-roma-park",
+    "name": "Villa Borghese",
+    "category": "parks",
+    "coordinates": [12.486, 41.914],
+    "address": "Roma",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "leisure": "park" }
+  },
+  {
+    "id": "poi-milano-pharmacy",
+    "name": "Farmacia Brera",
+    "category": "pharmacies",
+    "coordinates": [9.188, 45.468],
+    "address": "Brera, Milano",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "amenity": "pharmacy" }
+  },
+  {
+    "id": "poi-milano-market",
+    "name": "Supermercato Lorenteggio",
+    "category": "supermarkets",
+    "coordinates": [9.142, 45.445],
+    "address": "Lorenteggio, Milano",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "shop": "supermarket" }
+  },
+  {
+    "id": "poi-milano-transit",
+    "name": "Milano Centrale",
+    "category": "transit",
+    "coordinates": [9.203, 45.486],
+    "address": "Milano",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "railway": "station" }
+  },
+  {
+    "id": "poi-napoli-school",
+    "name": "Istituto Chiaia",
+    "category": "schools",
+    "coordinates": [14.235, 40.836],
+    "address": "Chiaia, Napoli",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "amenity": "school" }
+  },
+  {
+    "id": "poi-bologna-park",
+    "name": "Giardini Margherita",
+    "category": "parks",
+    "coordinates": [11.356, 44.486],
+    "address": "Bologna",
+    "osmUrl": "https://www.openstreetmap.org",
+    "tags": { "leisure": "park" }
+  }
+]

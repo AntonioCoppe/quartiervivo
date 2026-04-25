@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-04-25T00:00:00.000Z",
+  "nationalAreaLevel": "comune",
+  "comuneCount": 7894,
+  "subcomuneCityCount": 0,
+  "sources": [
+    {
+      "id": "mef-irpef-comune",
+      "role": "income",
+      "url": "https://www1.finanze.gov.it/finanze/analisi_stat/public/v_4_0_0/contenuti/Redditi_e_principali_variabili_IRPEF_su_base_comunale_CSV_2024.zip?d=1615465800",
+      "expectedFile": "Redditi_e_principali_variabili_IRPEF_su_base_comunale_CSV_2024.zip",
+      "notes": "Dichiarazioni 2025, anno d'imposta 2024. Use Codice catastale/Codice Istat Comune when present; privacy-suppressed cells may be blank."
+    },
+    {
+      "id": "mef-irpef-subcomune-cap",
+      "role": "income",
+      "url": "https://www1.finanze.gov.it/finanze/analisi_stat/public/v_4_0_0/contenuti/Redditi_e_principali_variabili_IRPEF_su_base_sub-comunale_CSV_2024.zip?d=1615465800",
+      "expectedFile": "Redditi_e_principali_variabili_IRPEF_su_base_sub-comunale_CSV_2024.zip",
+      "optional": true,
+      "notes": "CAP-level fallback for big-city internals. CAP is not equivalent to quartiere/suburb."
+    },
+    {
+      "id": "istat-comuni-codes",
+      "role": "identifiers",
+      "url": "https://www.istat.it/storage/codici-unita-amministrative/Elenco-comuni-italiani.csv",
+      "expectedFile": "Elenco-comuni-italiani.csv",
+      "notes": "Identifier authority. Current code list observed at 2026-02-21 with 7,894 comuni."
+    },
+    {
+      "id": "istat-posas-comuni",
+      "role": "population",
+      "url": "https://demo.istat.it/data/posas/POSAS_2025_it_Comuni.zip",
+      "expectedFile": "POSAS_2025_it_Comuni.zip",
+      "notes": "Resident population by age/sex/comune; aggregate to total residents by ISTAT comune code."
+    },
+    {
+      "id": "istat-admin-boundaries-generalized",
+      "role": "boundaries",
+      "url": "https://www.istat.it/storage/cartografia/confini_amministrativi/generalizzati/2026/Limiti01012026_g.zip",
+      "expectedFile": "Limiti01012026_g.zip",
+      "notes": "Generalized web-display boundary source at 1 Jan 2026. Preserve PRO_COM_T as text."
+    },
+    {
+      "id": "istat-admin-boundaries-detailed",
+      "role": "boundaries",
+      "url": "https://www.istat.it/storage/cartografia/confini_amministrativi/non_generalizzati/2026/Limiti01012026.zip",
+      "expectedFile": "Limiti01012026.zip",
+      "notes": "Detailed analysis boundary source at 1 Jan 2026. Convert from shapefile before web use."
+    },
+    {
+      "id": "istat-aree-subcomunali-2021",
+      "role": "subcomune-boundaries",
+      "url": "https://www.istat.it/storage/cartografia/basi_territoriali/2021/ASC_21.zip",
+      "expectedFile": "ASC_21.zip",
+      "notes": "Fallback sub-comune administrative/statistical areas from Basi territoriali 2021."
+    }
+  ]
+}

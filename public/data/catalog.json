@@ -1,0 +1,244 @@
+{
+  "metricGroups": [
+    {
+      "id": "population",
+      "label": {
+        "en": "Population",
+        "it": "Popolazione"
+      }
+    },
+    {
+      "id": "income",
+      "label": {
+        "en": "Income",
+        "it": "Reddito"
+      }
+    },
+    {
+      "id": "employment",
+      "label": {
+        "en": "Employment",
+        "it": "Occupazione"
+      }
+    },
+    {
+      "id": "education",
+      "label": {
+        "en": "Education",
+        "it": "Istruzione"
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "id": "resident_population",
+      "group": "population",
+      "label": {
+        "en": "Total population",
+        "it": "Popolazione totale"
+      },
+      "shortLabel": {
+        "en": "Population",
+        "it": "Popolazione"
+      },
+      "unit": "count",
+      "year": 2025,
+      "sourceId": "istat-posas-comuni",
+      "granularity": "municipality",
+      "tileProperty": "resident_population",
+      "description": {
+        "en": "Resident population count from ISTAT POSAS.",
+        "it": "Popolazione residente da ISTAT POSAS."
+      }
+    },
+    {
+      "id": "gender_ratio",
+      "group": "population",
+      "label": {
+        "en": "Gender ratio (M:F)",
+        "it": "Rapporto uomini/donne"
+      },
+      "shortLabel": {
+        "en": "Gender ratio",
+        "it": "Rapporto M/F"
+      },
+      "unit": "index",
+      "year": 2025,
+      "sourceId": "istat-posas-comuni",
+      "granularity": "municipality",
+      "tileProperty": "gender_ratio",
+      "description": {
+        "en": "Number of males per 100 females.",
+        "it": "Numero di uomini ogni 100 donne."
+      }
+    },
+    {
+      "id": "age_65_plus_percent",
+      "group": "population",
+      "label": {
+        "en": "Population aged 65+ (%)",
+        "it": "Popolazione 65+ (%)"
+      },
+      "shortLabel": {
+        "en": "65+",
+        "it": "65+"
+      },
+      "unit": "percent",
+      "year": 2025,
+      "sourceId": "istat-posas-comuni",
+      "granularity": "municipality",
+      "tileProperty": "age_65_plus_percent",
+      "description": {
+        "en": "Share of residents aged 65 or older.",
+        "it": "Quota di residenti con almeno 65 anni."
+      }
+    },
+    {
+      "id": "age_15_64_percent",
+      "group": "population",
+      "label": {
+        "en": "Population aged 15-64 (%)",
+        "it": "Popolazione 15-64 (%)"
+      },
+      "shortLabel": {
+        "en": "15-64",
+        "it": "15-64"
+      },
+      "unit": "percent",
+      "year": 2025,
+      "sourceId": "istat-posas-comuni",
+      "granularity": "municipality",
+      "tileProperty": "age_15_64_percent",
+      "description": {
+        "en": "Share of residents aged 15 to 64.",
+        "it": "Quota di residenti tra 15 e 64 anni."
+      }
+    },
+    {
+      "id": "age_under_15_percent",
+      "group": "population",
+      "label": {
+        "en": "Population under 15 (%)",
+        "it": "Popolazione sotto i 15 anni (%)"
+      },
+      "shortLabel": {
+        "en": "Under 15",
+        "it": "Under 15"
+      },
+      "unit": "percent",
+      "year": 2025,
+      "sourceId": "istat-posas-comuni",
+      "granularity": "municipality",
+      "tileProperty": "age_under_15_percent",
+      "description": {
+        "en": "Share of residents younger than 15.",
+        "it": "Quota di residenti con meno di 15 anni."
+      }
+    },
+    {
+      "id": "income_per_taxpayer",
+      "group": "income",
+      "label": {
+        "en": "Average income per taxpayer (€)",
+        "it": "Reddito medio per contribuente (€)"
+      },
+      "shortLabel": {
+        "en": "Income",
+        "it": "Reddito"
+      },
+      "unit": "EUR",
+      "year": 2024,
+      "sourceId": "mef-irpef-comune",
+      "granularity": "municipality",
+      "tileProperty": "income_per_taxpayer",
+      "description": {
+        "en": "MEF total income divided by taxpayer count.",
+        "it": "Reddito complessivo MEF diviso per numero di contribuenti."
+      }
+    },
+    {
+      "id": "employment_rate",
+      "group": "employment",
+      "label": {
+        "en": "Employment rate (%)",
+        "it": "Tasso di occupazione (%)"
+      },
+      "shortLabel": {
+        "en": "Employment",
+        "it": "Occupazione"
+      },
+      "unit": "percent",
+      "year": 2023,
+      "sourceId": "istat-census-sections",
+      "granularity": "census_section",
+      "tileProperty": "employment_rate",
+      "description": {
+        "en": "Census-section employment metric. Not available in the current local raw bundle.",
+        "it": "Metrica di occupazione per sezione censuaria. Non disponibile nel bundle locale attuale."
+      }
+    },
+    {
+      "id": "services_employment_percent",
+      "group": "employment",
+      "label": {
+        "en": "Services employment (%)",
+        "it": "Occupazione nei servizi (%)"
+      },
+      "shortLabel": {
+        "en": "Services",
+        "it": "Servizi"
+      },
+      "unit": "percent",
+      "year": 2023,
+      "sourceId": "istat-census-sections",
+      "granularity": "census_section",
+      "tileProperty": "services_employment_percent",
+      "description": {
+        "en": "Share of employed residents working in services. Not available in the current local raw bundle.",
+        "it": "Quota di occupati nei servizi. Non disponibile nel bundle locale attuale."
+      }
+    },
+    {
+      "id": "higher_education_percent",
+      "group": "education",
+      "label": {
+        "en": "Population with higher education (%)",
+        "it": "Popolazione con istruzione superiore (%)"
+      },
+      "shortLabel": {
+        "en": "Higher ed.",
+        "it": "Istr. superiore"
+      },
+      "unit": "percent",
+      "year": 2023,
+      "sourceId": "istat-census-sections",
+      "granularity": "census_section",
+      "tileProperty": "higher_education_percent",
+      "description": {
+        "en": "Higher-education attainment metric. Not available in the current local raw bundle.",
+        "it": "Metrica sul titolo di studio superiore. Non disponibile nel bundle locale attuale."
+      }
+    },
+    {
+      "id": "primary_education_or_below_percent",
+      "group": "education",
+      "label": {
+        "en": "Primary education or below (%)",
+        "it": "Istruzione primaria o inferiore (%)"
+      },
+      "shortLabel": {
+        "en": "Primary or below",
+        "it": "Primaria o meno"
+      },
+      "unit": "percent",
+      "year": 2023,
+      "sourceId": "istat-census-sections",
+      "granularity": "census_section",
+      "tileProperty": "primary_education_or_below_percent",
+      "description": {
+        "en": "Primary-or-below attainment metric. Not available in the current local raw bundle.",
+        "it": "Metrica sul titolo di studio primario o inferiore. Non disponibile nel bundle locale attuale."
+      }
+    }
+  ]
+}

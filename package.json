@@ -1,0 +1,40 @@
+{
+  "name": "mappaquartieri",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "data:fetch": "node scripts/fetch-national-data.mjs",
+    "data:unpack": "node scripts/unpack-national-data.mjs",
+    "data:build": "node scripts/build-national-dataset.mjs",
+    "data:map": "node scripts/build-map-artifacts.mjs",
+    "data:all": "npm run data:build && npm run data:map"
+  },
+  "dependencies": {
+    "lucide-react": "latest",
+    "maplibre-gl": "latest",
+    "pmtiles": "^4.4.1",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@types/geojson": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "@vitest/coverage-v8": "latest",
+    "jsdom": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}

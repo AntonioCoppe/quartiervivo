@@ -1,0 +1,138 @@
+{
+  "generatedAt": "2026-04-25T00:00:00.000Z",
+  "fallbackSourceId": "istat-aree-subcomunali-2021",
+  "cities": [
+    {
+      "comuneId": "comune-058091",
+      "istatCode": "058091",
+      "city": "Roma",
+      "preferredSourceId": "roma-zone-urbanistiche",
+      "granularity": "zone_urbanistiche",
+      "url": "https://geoportale.comune.roma.it/catalogo/",
+      "format": "OGC WMS/WFS",
+      "license": "CC BY 4.0",
+      "notes": "Prefer Zone Urbanistiche for fine reusable city subdivisions; Municipi are available as coarser admin layer."
+    },
+    {
+      "comuneId": "comune-015146",
+      "istatCode": "015146",
+      "city": "Milano",
+      "preferredSourceId": "milano-nil",
+      "granularity": "NIL",
+      "url": "https://dati.comune.milano.it/dataset/ds964-nil-vigenti-pgt-2030",
+      "format": "GeoJSON/SHP/CSV",
+      "license": "CC BY 4.0",
+      "notes": "NIL fields include ID_NIL, NIL, LABEL. CSV is centroid-only; use GeoJSON/SHP for polygons."
+    },
+    {
+      "comuneId": "comune-063049",
+      "istatCode": "063049",
+      "city": "Napoli",
+      "preferredSourceId": "napoli-quartieri",
+      "granularity": "quartieri",
+      "url": "https://trasparenza.comune.napoli.it/flex/cm/pages/ServeBLOB.php/L/IT/IDPagina/26532",
+      "format": "SHP ZIP",
+      "license": "IODL 2.0",
+      "notes": "Quartieri are based on previous administrative partition from ISTAT 2001 sections."
+    },
+    {
+      "comuneId": "comune-001272",
+      "istatCode": "001272",
+      "city": "Torino",
+      "preferredSourceId": "torino-quartieri",
+      "granularity": "quartieri",
+      "url": "https://aperto.comune.torino.it/dataset/quartieri",
+      "format": "ZIP CSV/SHP",
+      "license": "CC BY 4.0",
+      "notes": "Use circoscrizioni as coarser fallback: https://aperto.comune.torino.it/dataset/circoscrizioni."
+    },
+    {
+      "comuneId": "comune-082053",
+      "istatCode": "082053",
+      "city": "Palermo",
+      "preferredSourceId": "palermo-circoscrizioni",
+      "granularity": "circoscrizioni",
+      "url": "https://opendata.comune.palermo.it/opendata-dataset.php?dataset=265",
+      "format": "SHP ZIP",
+      "license": "CC BY 4.0 IT",
+      "notes": "Use SHP schema inspection for stable code/name fields."
+    },
+    {
+      "comuneId": "comune-010025",
+      "istatCode": "010025",
+      "city": "Genova",
+      "preferredSourceId": "genova-unita-urbanistiche",
+      "granularity": "unita_urbanistiche",
+      "url": "https://geodati.gov.it/resource/id/c_d969%3A79c161ac-0daa-4c74-b75f-eef1ae866ce2",
+      "format": "OGC WMS/WFS",
+      "license": "CC BY 4.0",
+      "notes": "WFS layer SITGEO/V_UNITA_URBANISTICHE; CRS Monte Mario Italy 1."
+    },
+    {
+      "comuneId": "comune-037006",
+      "istatCode": "037006",
+      "city": "Bologna",
+      "preferredSourceId": "bologna-aree-statistiche",
+      "granularity": "aree_statistiche",
+      "url": "https://opendata.comune.bologna.it/explore/dataset/aree-statistiche/",
+      "format": "GeoJSON/SHP/JSON/CSV",
+      "license": "CC BY 4.0",
+      "notes": "Ninety statistical areas; better neighborhood granularity than quartieri."
+    },
+    {
+      "comuneId": "comune-048017",
+      "istatCode": "048017",
+      "city": "Firenze",
+      "preferredSourceId": "firenze-aree-elementari",
+      "granularity": "aree_elementari",
+      "url": "https://opendata.comune.fi.it/index.php/page_dataset_show?id=aree-elementari-2021",
+      "format": "WMS/SHP/GeoJSON/GML/CSV",
+      "license": "CC BY 4.0",
+      "notes": "Use aree elementari level 2 for finer coverage; quartieri are coarse and based on old paper map source."
+    },
+    {
+      "comuneId": "comune-072006",
+      "istatCode": "072006",
+      "city": "Bari",
+      "preferredSourceId": "bari-municipi",
+      "granularity": "municipi",
+      "url": "https://www.dati.gov.it/node/view-dataset/dataset?id=da2b0e0f-e913-4944-9062-d23aeef7a6c5",
+      "format": "ZIP/SHP",
+      "license": "CC BY 4.0",
+      "notes": "Prefer five current Municipi; quartieri are historical/non-official socio-urbanistic units."
+    },
+    {
+      "comuneId": "comune-087015",
+      "istatCode": "087015",
+      "city": "Catania",
+      "preferredSourceId": "istat-aree-subcomunali-2021",
+      "granularity": "circoscrizioni",
+      "url": "https://www.istat.it/storage/cartografia/basi_territoriali/2021/ASC_21.zip",
+      "format": "SHP/XLS",
+      "license": "CC BY 4.0",
+      "notes": "Municipal SIT is useful for visual confirmation, but ISTAT ASC is the clearer reusable licensed fallback."
+    },
+    {
+      "comuneId": "comune-027042",
+      "istatCode": "027042",
+      "city": "Venezia",
+      "preferredSourceId": "venezia-dbgt-subcomunale",
+      "granularity": "municipalita_sestiere_insulario_quartiere_localita",
+      "url": "https://dati.venezia.it/?q=tag%2Fdbgt",
+      "format": "DWG/DXF/SHP/GeoJSON",
+      "license": "IODL 2.0",
+      "notes": "Use Municipalita for admin; lower Venice-specific units include Sestiere, Insulario, Quartiere, Localita, Isolato."
+    },
+    {
+      "comuneId": "comune-023091",
+      "istatCode": "023091",
+      "city": "Verona",
+      "preferredSourceId": "verona-zone-omogenee",
+      "granularity": "zone_omogenee",
+      "url": "https://dati.veneto.it/opendata/Comune_di_Verona_Confini_amministrativi_Zone_Omogenee?metadati=showall",
+      "format": "SHP/API",
+      "license": "CC BY 4.0",
+      "notes": "Finest official layer: 79 zone omogenee. Circoscrizioni and quartieri are coarser alternatives."
+    }
+  ]
+}
