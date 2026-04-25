@@ -10,6 +10,12 @@ const rawDir = new URL("../data/raw/", import.meta.url);
 const outputDir = new URL("../public/data/", import.meta.url);
 const processedDir = new URL("../data/processed/", import.meta.url);
 
+const currentIncomeYear = 2024;
+const currentPopulationYear = 2025;
+const incomeYears = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
+const populationYears = [2021, 2022, 2023, 2024, 2025];
+const incomeStops = [8000, 12000, 16000, 20000, 24000, 28000];
+
 const codeCandidates = [
   "codice_comune_formato_alfanumerico",
   "codice_comune",
@@ -23,7 +29,6 @@ const comuneNameCandidates = ["denominazione_in_italiano", "denominazione_comune
 const provinceCandidates = ["sigla_automobilistica", "sigla_provincia", "provincia"];
 const regionCandidates = ["denominazione_regione", "regione"];
 const taxpayersCandidates = ["numero_contribuenti", "frequenza_numero_contribuenti"];
-const totalIncomeCandidates = ["reddito_complessivo_ammontare", "reddito_complessivo"];
 const totalIncomeAmountCandidates = [
   "reddito_complessivo_ammontare_in_euro",
   "reddito_complessivo_ammontare",
@@ -38,7 +43,7 @@ const metricCatalog = [
     label: { en: "Total population", it: "Popolazione totale" },
     shortLabel: { en: "Population", it: "Popolazione" },
     unit: "count",
-    year: 2025,
+    year: currentPopulationYear,
     sourceId: "istat-posas-comuni",
     granularity: "municipality",
     tileProperty: "resident_population",
@@ -53,7 +58,7 @@ const metricCatalog = [
     label: { en: "Gender ratio (M:F)", it: "Rapporto uomini/donne" },
     shortLabel: { en: "Gender ratio", it: "Rapporto M/F" },
     unit: "index",
-    year: 2025,
+    year: currentPopulationYear,
     sourceId: "istat-posas-comuni",
     granularity: "municipality",
     tileProperty: "gender_ratio",
@@ -68,7 +73,7 @@ const metricCatalog = [
     label: { en: "Population aged 65+ (%)", it: "Popolazione 65+ (%)" },
     shortLabel: { en: "65+", it: "65+" },
     unit: "percent",
-    year: 2025,
+    year: currentPopulationYear,
     sourceId: "istat-posas-comuni",
     granularity: "municipality",
     tileProperty: "age_65_plus_percent",
@@ -83,7 +88,7 @@ const metricCatalog = [
     label: { en: "Population aged 15-64 (%)", it: "Popolazione 15-64 (%)" },
     shortLabel: { en: "15-64", it: "15-64" },
     unit: "percent",
-    year: 2025,
+    year: currentPopulationYear,
     sourceId: "istat-posas-comuni",
     granularity: "municipality",
     tileProperty: "age_15_64_percent",
@@ -98,7 +103,7 @@ const metricCatalog = [
     label: { en: "Population under 15 (%)", it: "Popolazione sotto i 15 anni (%)" },
     shortLabel: { en: "Under 15", it: "Under 15" },
     unit: "percent",
-    year: 2025,
+    year: currentPopulationYear,
     sourceId: "istat-posas-comuni",
     granularity: "municipality",
     tileProperty: "age_under_15_percent",
@@ -108,18 +113,65 @@ const metricCatalog = [
     }
   },
   {
+    id: "income_per_capita",
+    group: "income",
+    label: { en: "Declared income per capita (€)", it: "Reddito dichiarato pro capite (€)" },
+    shortLabel: { en: "Income per capita", it: "Reddito pro capite" },
+    unit: "EUR",
+    year: currentIncomeYear,
+    sourceId: "mef-irpef-comune",
+    granularity: "municipality",
+    tileProperty: "income_per_capita",
+    colorStops: incomeStops,
+    description: {
+      en: "MEF total declared income divided by ISTAT resident population for the same comune where both sources are available.",
+      it: "Reddito complessivo dichiarato MEF diviso per popolazione residente ISTAT dello stesso comune quando entrambe le fonti sono disponibili."
+    }
+  },
+  {
     id: "income_per_taxpayer",
     group: "income",
     label: { en: "Average income per taxpayer (€)", it: "Reddito medio per contribuente (€)" },
-    shortLabel: { en: "Income", it: "Reddito" },
+    shortLabel: { en: "Income/taxpayer", it: "Reddito/contrib." },
     unit: "EUR",
-    year: 2024,
+    year: currentIncomeYear,
     sourceId: "mef-irpef-comune",
     granularity: "municipality",
     tileProperty: "income_per_taxpayer",
+    colorStops: incomeStops,
     description: {
-      en: "MEF total income divided by taxpayer count.",
-      it: "Reddito complessivo MEF diviso per numero di contribuenti."
+      en: "MEF total declared income divided by taxpayer count.",
+      it: "Reddito complessivo dichiarato MEF diviso per numero di contribuenti."
+    }
+  },
+  {
+    id: "taxpayer_count",
+    group: "income",
+    label: { en: "Taxpayers", it: "Contribuenti" },
+    shortLabel: { en: "Taxpayers", it: "Contribuenti" },
+    unit: "count",
+    year: currentIncomeYear,
+    sourceId: "mef-irpef-comune",
+    granularity: "municipality",
+    tileProperty: "taxpayer_count",
+    description: {
+      en: "Number of taxpayers in the MEF municipal declarations file.",
+      it: "Numero di contribuenti nel file comunale delle dichiarazioni MEF."
+    }
+  },
+  {
+    id: "taxpayer_share_percent",
+    group: "income",
+    label: { en: "Taxpayers per resident (%)", it: "Contribuenti per residente (%)" },
+    shortLabel: { en: "Taxpayer share", it: "Quota contrib." },
+    unit: "percent",
+    year: currentIncomeYear,
+    sourceId: "mef-irpef-comune",
+    granularity: "municipality",
+    tileProperty: "taxpayer_share_percent",
+    description: {
+      en: "Taxpayer count divided by resident population. This is not an employment rate.",
+      it: "Numero di contribuenti diviso per popolazione residente. Non e un tasso di occupazione."
     }
   },
   {
@@ -190,23 +242,17 @@ async function main() {
 
   const files = await listFiles(rawDir.pathname).catch(() => []);
   const identifierFile = files.find((file) => /Elenco-comuni-italiani\.csv$/i.test(file));
-  const incomeFile = files.find((file) => /base_comunale.*\.csv$/i.test(file));
-  const populationFile = files.find((file) => /POS|POP/i.test(file) && /\.csv$/i.test(file));
 
   if (!identifierFile) {
     throw new Error("Missing data/raw/Elenco-comuni-italiani.csv. Run npm run data:fetch or place it manually.");
   }
 
   const identifiers = parseDelimited(await readTextAuto(identifierFile));
-  const incomeRows = incomeFile
-    ? parseDelimited(await readTextAuto(incomeFile))
-    : [];
-  const populationRows = populationFile
-    ? parseDelimited(await readTextAuto(populationFile))
-    : [];
+  const incomeByYear = await createIndexByYear(files, incomeYears, findIncomeFile, createIncomeIndex);
+  const populationByYear = await createIndexByYear(files, populationYears, findPopulationFile, createPopulationIndex);
+  const currentIncomeByIstat = incomeByYear.get(currentIncomeYear) ?? new Map();
+  const currentPopulationByIstat = populationByYear.get(currentPopulationYear) ?? new Map();
 
-  const incomeByIstat = createIncomeIndex(incomeRows);
-  const populationByIstat = createPopulationIndex(populationRows);
   const areas = identifiers
     .map((row) => {
       const istatCode = firstPresent(row, codeCandidates)?.padStart(6, "0") ?? null;
@@ -216,9 +262,15 @@ async function main() {
       }
 
       const cadastralCode = firstPresent(row, cadastralCandidates);
-      const income = incomeByIstat.get(istatCode) ?? (cadastralCode ? incomeByIstat.get(cadastralCode) : null);
-      const populationProfile = populationByIstat.get(istatCode) ?? null;
+      const income = findIncomeRecord(currentIncomeByIstat, istatCode, cadastralCode);
+      const populationProfile = currentPopulationByIstat.get(istatCode) ?? getLatestPopulation(populationByYear, istatCode);
       const population = populationProfile?.population ?? null;
+      const populationForIncome =
+        populationByYear.get(currentIncomeYear)?.get(istatCode)?.population ?? population;
+      const incomePerCapita =
+        income?.totalIncome && populationForIncome ? Math.round(income.totalIncome / populationForIncome) : null;
+      const taxpayerSharePercent =
+        income?.taxpayers && populationForIncome ? roundMetric((income.taxpayers / populationForIncome) * 100) : null;
       const name = firstPresent(row, comuneNameCandidates) ?? istatCode;
       const region = firstPresent(row, regionCandidates) ?? "";
 
@@ -236,34 +288,49 @@ async function main() {
         sourceIds: ["istat-comuni-codes", "mef-irpef-comune", "istat-posas-comuni"],
         metrics: [
           {
+            metricId: "income_per_capita",
+            value: incomePerCapita,
+            year: currentIncomeYear
+          },
+          {
             metricId: "income_per_taxpayer",
             value: income?.averageIncome ?? null,
-            year: 2024
+            year: currentIncomeYear
+          },
+          {
+            metricId: "taxpayer_count",
+            value: income?.taxpayers ?? null,
+            year: currentIncomeYear
+          },
+          {
+            metricId: "taxpayer_share_percent",
+            value: taxpayerSharePercent,
+            year: currentIncomeYear
           },
           {
             metricId: "resident_population",
             value: population,
-            year: 2025
+            year: currentPopulationYear
           },
           {
             metricId: "gender_ratio",
             value: populationProfile?.genderRatio ?? null,
-            year: 2025
+            year: currentPopulationYear
           },
           {
             metricId: "age_65_plus_percent",
             value: populationProfile?.age65PlusPercent ?? null,
-            year: 2025
+            year: currentPopulationYear
           },
           {
             metricId: "age_15_64_percent",
             value: populationProfile?.age1564Percent ?? null,
-            year: 2025
+            year: currentPopulationYear
           },
           {
             metricId: "age_under_15_percent",
             value: populationProfile?.ageUnder15Percent ?? null,
-            year: 2025
+            year: currentPopulationYear
           },
           {
             metricId: "employment_rate",
@@ -290,12 +357,18 @@ async function main() {
     })
     .filter(Boolean);
 
+  const nationalSeries = createNationalSeries(areas, incomeByYear, populationByYear);
   const coverage = {
     generatedAt: new Date().toISOString(),
     nationalAreaLevel: "comune",
     comuneCount: areas.length,
-    withIncome: areas.filter((area) => area.metrics.some((metric) => metric.metricId === "income_per_taxpayer" && metric.value !== null)).length,
+    withIncome: areas.filter((area) => hasMetricValue(area, "income_per_taxpayer")).length,
+    withIncomePerCapita: areas.filter((area) => hasMetricValue(area, "income_per_capita")).length,
     withPopulation: areas.filter((area) => area.population !== null).length,
+    withIncomeHistory: areas.filter((area) =>
+      createAreaSeries(area, incomeByYear, populationByYear, nationalSeries).income_per_taxpayer.values
+        .filter((value) => value !== null).length > 1
+    ).length,
     subcomuneCityCount: 0
   };
   const detailRecords = Object.fromEntries(
@@ -306,11 +379,13 @@ async function main() {
         name: area.name,
         city: area.city,
         region: area.region,
+        istatCode: area.istatCode,
         province: area.province,
         areaLevel: area.areaLevel,
         granularity: area.granularity,
         sourceIds: area.sourceIds,
         metrics: Object.fromEntries(area.metrics.map((metric) => [metric.metricId, metric.value])),
+        metricSeries: createAreaSeries(area, incomeByYear, populationByYear, nationalSeries),
         ageStructure: {
           under15: findMetricValue(area, "age_under_15_percent"),
           age15To64: findMetricValue(area, "age_15_64_percent"),
@@ -337,6 +412,32 @@ async function main() {
   await writeFile(join(outputDir.pathname, "area-details.json"), `${JSON.stringify(detailRecords, null, 2)}\n`);
   await writeFile(join(outputDir.pathname, "coverage.json"), `${JSON.stringify(coverage, null, 2)}\n`);
   console.log(coverage);
+}
+
+async function createIndexByYear(files, years, findFile, createIndex) {
+  const entries = new Map();
+
+  for (const year of years) {
+    const file = findFile(files, year);
+
+    if (!file) {
+      continue;
+    }
+
+    entries.set(year, createIndex(parseDelimited(await readTextAuto(file))));
+  }
+
+  return entries;
+}
+
+function findIncomeFile(files, year) {
+  return files.find((file) =>
+    new RegExp(`Redditi_e_principali_variabili_IRPEF_su_base_comunale_CSV_${year}.*\\.csv$`, "i").test(file)
+  );
+}
+
+function findPopulationFile(files, year) {
+  return files.find((file) => new RegExp(`POSAS_${year}_it_Comuni\\.csv$`, "i").test(file));
 }
 
 async function readTextAuto(file) {
@@ -369,7 +470,8 @@ function createIncomeIndex(rows) {
     const istatCode = firstPresent(row, codeCandidates)?.padStart(6, "0");
     const cadastralCode = firstPresent(row, cadastralCandidates);
     const taxpayers = parseItalianNumber(firstPresent(row, taxpayersCandidates));
-    const totalIncome = parseItalianNumber(firstPresent(row, totalIncomeAmountCandidates));
+    const totalIncome =
+      parseItalianNumber(firstPresent(row, totalIncomeAmountCandidates)) ?? sumIncomeBands(row);
 
     if (!taxpayers || !totalIncome) {
       continue;
@@ -393,6 +495,23 @@ function createIncomeIndex(rows) {
   return entries;
 }
 
+function sumIncomeBands(row) {
+  const values = Object.entries(row)
+    .filter(([key]) =>
+      key.startsWith("reddito_complessivo_") &&
+      key.endsWith("_ammontare_in_euro") &&
+      key !== "reddito_complessivo_ammontare_in_euro"
+    )
+    .map(([, value]) => parseItalianNumber(value))
+    .filter((value) => value !== null);
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return values.reduce((sum, value) => sum + value, 0);
+}
+
 function createPopulationIndex(rows) {
   const entries = new Map();
   const profiles = new Map();
@@ -400,7 +519,7 @@ function createPopulationIndex(rows) {
   for (const row of rows) {
     const istatCode = firstPresent(row, [...codeCandidates, "ref_area"])?.padStart(6, "0");
     const ageValue = firstPresent(row, ["eta", "age"]);
-    const age = ageValue === "999" ? 999 : Number(ageValue);
+    const age = ageValue === "999" || ageValue === "Totale" || ageValue === "totale" ? 999 : Number(ageValue);
     const population = parseItalianNumber(firstPresent(row, populationCandidates));
     const male = parseItalianNumber(firstPresent(row, ["totale_maschi", "maschi", "male"]));
     const female = parseItalianNumber(firstPresent(row, ["totale_femmine", "femmine", "female"]));
@@ -428,13 +547,12 @@ function createPopulationIndex(rows) {
       continue;
     }
 
-    const nextProfile = {
+    profiles.set(istatCode, {
       ...profile,
       under15: profile.under15 + (age < 15 ? population : 0),
       age15To64: profile.age15To64 + (age >= 15 && age <= 64 ? population : 0),
       age65Plus: profile.age65Plus + (age >= 65 ? population : 0)
-    };
-    profiles.set(istatCode, nextProfile);
+    });
   }
 
   for (const [istatCode, profile] of profiles) {
@@ -455,8 +573,166 @@ function createPopulationIndex(rows) {
   return entries;
 }
 
+function createNationalSeries(areas, incomeByYear, populationByYear) {
+  return {
+    resident_population: {
+      years: populationYears,
+      values: populationYears.map((year) => sumPopulation(areas, populationByYear.get(year)))
+    },
+    income_per_capita: {
+      years: incomeYears,
+      values: incomeYears.map((year) => calculateNationalIncomePerCapita(areas, incomeByYear.get(year), populationByYear.get(year)))
+    },
+    income_per_taxpayer: {
+      years: incomeYears,
+      values: incomeYears.map((year) => calculateNationalIncomePerTaxpayer(areas, incomeByYear.get(year)))
+    },
+    taxpayer_count: {
+      years: incomeYears,
+      values: incomeYears.map((year) => sumTaxpayers(areas, incomeByYear.get(year)))
+    },
+    taxpayer_share_percent: {
+      years: incomeYears,
+      values: incomeYears.map((year) => {
+        const taxpayers = sumTaxpayers(areas, incomeByYear.get(year));
+        const population = sumPopulation(areas, populationByYear.get(year));
+        return taxpayers && population ? roundMetric((taxpayers / population) * 100) : null;
+      })
+    }
+  };
+}
+
+function createAreaSeries(area, incomeByYear, populationByYear, nationalSeries) {
+  const incomePerCapita = incomeYears.map((year) => {
+    const income = findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode);
+    const population = populationByYear.get(year)?.get(area.istatCode)?.population ?? null;
+    return income?.totalIncome && population ? Math.round(income.totalIncome / population) : null;
+  });
+  const incomePerTaxpayer = incomeYears.map((year) =>
+    findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode)?.averageIncome ?? null
+  );
+  const taxpayerCount = incomeYears.map((year) =>
+    findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode)?.taxpayers ?? null
+  );
+  const population = populationYears.map((year) =>
+    populationByYear.get(year)?.get(area.istatCode)?.population ?? null
+  );
+  const taxpayerShare = incomeYears.map((year) => {
+    const taxpayers = findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode)?.taxpayers ?? null;
+    const residents = populationByYear.get(year)?.get(area.istatCode)?.population ?? null;
+    return taxpayers && residents ? roundMetric((taxpayers / residents) * 100) : null;
+  });
+
+  return {
+    resident_population: {
+      years: populationYears,
+      values: population,
+      nationalValues: nationalSeries.resident_population.values
+    },
+    income_per_capita: {
+      years: incomeYears,
+      values: incomePerCapita,
+      nationalValues: nationalSeries.income_per_capita.values
+    },
+    income_per_taxpayer: {
+      years: incomeYears,
+      values: incomePerTaxpayer,
+      nationalValues: nationalSeries.income_per_taxpayer.values
+    },
+    taxpayer_count: {
+      years: incomeYears,
+      values: taxpayerCount,
+      nationalValues: nationalSeries.taxpayer_count.values
+    },
+    taxpayer_share_percent: {
+      years: incomeYears,
+      values: taxpayerShare,
+      nationalValues: nationalSeries.taxpayer_share_percent.values
+    }
+  };
+}
+
+function sumPopulation(areas, populationIndex) {
+  if (!populationIndex) {
+    return null;
+  }
+
+  const total = areas.reduce((sum, area) => sum + (populationIndex.get(area.istatCode)?.population ?? 0), 0);
+  return total > 0 ? total : null;
+}
+
+function sumTaxpayers(areas, incomeIndex) {
+  if (!incomeIndex) {
+    return null;
+  }
+
+  const total = areas.reduce((sum, area) => {
+    const income = findIncomeRecord(incomeIndex, area.istatCode, area.cadastralCode);
+    return sum + (income?.taxpayers ?? 0);
+  }, 0);
+
+  return total > 0 ? total : null;
+}
+
+function calculateNationalIncomePerCapita(areas, incomeIndex, populationIndex) {
+  if (!incomeIndex || !populationIndex) {
+    return null;
+  }
+
+  const totals = areas.reduce(
+    (current, area) => {
+      const income = findIncomeRecord(incomeIndex, area.istatCode, area.cadastralCode);
+      const population = populationIndex.get(area.istatCode)?.population ?? null;
+
+      return {
+        totalIncome: current.totalIncome + (income?.totalIncome ?? 0),
+        population: current.population + (population ?? 0)
+      };
+    },
+    { totalIncome: 0, population: 0 }
+  );
+
+  return totals.totalIncome && totals.population ? Math.round(totals.totalIncome / totals.population) : null;
+}
+
+function calculateNationalIncomePerTaxpayer(areas, incomeIndex) {
+  if (!incomeIndex) {
+    return null;
+  }
+
+  const totals = areas.reduce(
+    (current, area) => {
+      const income = findIncomeRecord(incomeIndex, area.istatCode, area.cadastralCode);
+
+      return {
+        totalIncome: current.totalIncome + (income?.totalIncome ?? 0),
+        taxpayers: current.taxpayers + (income?.taxpayers ?? 0)
+      };
+    },
+    { totalIncome: 0, taxpayers: 0 }
+  );
+
+  return totals.totalIncome && totals.taxpayers ? Math.round(totals.totalIncome / totals.taxpayers) : null;
+}
+
+function getLatestPopulation(populationByYear, istatCode) {
+  return [...populationByYear.entries()]
+    .sort(([leftYear], [rightYear]) => rightYear - leftYear)
+    .map(([, index]) => index.get(istatCode))
+    .find(Boolean) ?? null;
+}
+
+function findIncomeRecord(index, istatCode, cadastralCode) {
+  return index?.get(istatCode) ?? (cadastralCode ? index?.get(cadastralCode) : null) ?? null;
+}
+
 function findMetricValue(area, metricId) {
   return area.metrics.find((metric) => metric.metricId === metricId)?.value ?? null;
+}
+
+function hasMetricValue(area, metricId) {
+  const value = findMetricValue(area, metricId);
+  return value !== null && Number.isFinite(value);
 }
 
 function roundMetric(value) {

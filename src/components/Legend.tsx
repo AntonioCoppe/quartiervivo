@@ -1,4 +1,4 @@
-import { createLegendStops, formatMetricValue, getLocalizedText } from "../domain/metrics";
+import { createLegendStops, formatMetricValue, getLocalizedText, getMetricColorStops } from "../domain/metrics";
 import type { LocaleCode, MetricDefinition } from "../types/geography";
 
 interface LegendProps {
@@ -8,7 +8,10 @@ interface LegendProps {
 }
 
 export function Legend({ domain, locale, metric }: LegendProps) {
-  const stops = createLegendStops(domain, 3);
+  const colorStops = getMetricColorStops(metric, domain);
+  const stops = metric.colorStops?.length
+    ? [colorStops[0], colorStops[Math.floor(colorStops.length / 2)], colorStops[colorStops.length - 1]]
+    : createLegendStops(domain, 3);
 
   return (
     <div className="legend" aria-label="Map legend">

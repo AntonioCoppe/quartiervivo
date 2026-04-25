@@ -6,14 +6,16 @@ import maplibregl, {
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import {
   createExtrusionHeightExpression,
   createIncomeColorExpression
 } from "../map/layers";
+import { formatMetricValue, getLocalizedText, getMetricColorStops } from "../domain/metrics";
 import type {
   CityShortcut,
   FlyToRequest,
+  LocaleCode,
   MetricDefinition,
   PoiCategory,
   PoiFeature,
@@ -25,6 +27,7 @@ interface MapPanelProps {
   readonly domain: readonly [number, number];
   readonly flyToRequest: FlyToRequest | null;
   readonly is3d: boolean;
+  readonly locale: LocaleCode;
   readonly metric: MetricDefinition;
   readonly pois: readonly PoiFeature[];
   readonly poiVisibility: Record<PoiCategory, boolean>;
@@ -87,6 +90,7 @@ export function MapPanel({
   domain,
   flyToRequest,
   is3d,
+  locale,
   metric,
   pois,
   poiVisibility,
@@ -99,13 +103,31 @@ export function MapPanel({
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
+  const hoverFeatureIdRef = useRef<string | number | null>(null);
+  const metricRef = useRef(metric);
+  const metricPropertyRef = useRef(metric.tileProperty ?? metric.id);
+  const localeRef = useRef(locale);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [hoverTooltip, setHoverTooltip] = useState<{
+    readonly x: number;
+    readonly y: number;
+    readonly name: string;
+    readonly value: string;
+    readonly label: string;
+  } | null>(null);
 
   const visiblePois = useMemo(
     () => pois.filter((poi) => poiVisibility[poi.category]),
     [pois, poiVisibility]
   );
   const metricProperty = metric.tileProperty ?? metric.id;
+  const metricStops = useMemo(() => getMetricColorStops(metric, domain), [domain, metric]);
+
+  useEffect(() => {
+    metricRef.current = metric;
+    metricPropertyRef.current = metricProperty;
+    localeRef.current = locale;
+  }, [locale, metric, metricProperty]);
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current) {
@@ -151,7 +173,8 @@ export function MapPanel({
     map.on("load", () => {
       map.addSource("areas", {
         type: "vector",
-        url: areaPmtilesUrl
+        url: areaPmtilesUrl,
+        promoteId: "id"
       });
       map.addLayer({
         id: "areas-fill",
@@ -159,7 +182,7 @@ export function MapPanel({
         source: "areas",
         "source-layer": areaSourceLayer,
         paint: {
-          "fill-color": createIncomeColorExpression(domain, metricProperty, theme),
+          "fill-color": createIncomeColorExpression(domain, metricProperty, theme, metricStops),
           "fill-opacity": theme === "dark" ? 0.62 : 0.72
         }
       });
@@ -170,8 +193,8 @@ export function MapPanel({
         "source-layer": areaSourceLayer,
         minzoom: 7,
         paint: {
-          "fill-extrusion-color": createIncomeColorExpression(domain, metricProperty, theme),
-          "fill-extrusion-height": createExtrusionHeightExpression(domain, metricProperty, is3d),
+          "fill-extrusion-color": createIncomeColorExpression(domain, metricProperty, theme, metricStops),
+          "fill-extrusion-height": createExtrusionHeightExpression(domain, metricProperty, is3d, metricStops),
           "fill-extrusion-base": 0,
           "fill-extrusion-opacity": is3d ? 0.78 : 0
         }
@@ -240,8 +263,21 @@ export function MapPanel({
       map.on("mouseenter", "areas-fill", () => {
         map.getCanvas().style.cursor = "pointer";
       });
+      map.on("mousemove", "areas-fill", (event) => {
+        const feature = event.features?.[0];
+
+        if (!feature) {
+          setHoverTooltip(null);
+          return;
+        }
+
+        updateHoverFeature(map, hoverFeatureIdRef, feature);
+        setHoverTooltip(createHoverTooltip(feature, event.point.x, event.point.y, metricRef.current, metricPropertyRef.current, localeRef.current));
+      });
       map.on("mouseleave", "areas-fill", () => {
         map.getCanvas().style.cursor = "";
+        clearHoverFeature(map, hoverFeatureIdRef);
+        setHoverTooltip(null);
       });
       map.on("mouseenter", "poi-circles", () => {
         map.getCanvas().style.cursor = "pointer";
@@ -286,16 +322,16 @@ export function MapPanel({
     }
 
     if (map.getLayer("areas-fill")) {
-      map.setPaintProperty("areas-fill", "fill-color", createIncomeColorExpression(domain, metricProperty, theme));
+      map.setPaintProperty("areas-fill", "fill-color", createIncomeColorExpression(domain, metricProperty, theme, metricStops));
       map.setPaintProperty("areas-fill", "fill-opacity", theme === "dark" ? 0.62 : 0.72);
     }
 
     if (map.getLayer("areas-extrusion")) {
-      map.setPaintProperty("areas-extrusion", "fill-extrusion-color", createIncomeColorExpression(domain, metricProperty, theme));
+      map.setPaintProperty("areas-extrusion", "fill-extrusion-color", createIncomeColorExpression(domain, metricProperty, theme, metricStops));
       map.setPaintProperty(
         "areas-extrusion",
         "fill-extrusion-height",
-        createExtrusionHeightExpression(domain, metricProperty, is3d)
+        createExtrusionHeightExpression(domain, metricProperty, is3d, metricStops)
       );
       map.setPaintProperty("areas-extrusion", "fill-extrusion-opacity", is3d ? 0.78 : 0);
     }
@@ -303,7 +339,7 @@ export function MapPanel({
     if (map.getLayer("areas-outline")) {
       map.setPaintProperty("areas-outline", "line-color", theme === "dark" ? "#22272b" : "#ffffff");
     }
-  }, [domain, is3d, metricProperty, theme]);
+  }, [domain, is3d, metricProperty, metricStops, theme]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -358,9 +394,7 @@ export function MapPanel({
     }
 
     map.once("moveend", () => {
-      const point = map.project(flyToRequest.center as LngLatLike);
-      const features = map.queryRenderedFeatures(point, { layers: ["areas-fill", "areas-extrusion"] });
-      selectArea(features[0], onAreaSelect);
+      selectAreaAtSearchPoint(map, flyToRequest, onAreaSelect);
     });
   }, [flyToRequest, is3d, onAreaSelect]);
 
@@ -373,6 +407,17 @@ export function MapPanel({
           <span>Check generated files under public/data.</span>
         </div>
       ) : null}
+      {hoverTooltip ? (
+        <div
+          className="area-hover-tooltip"
+          style={{ left: hoverTooltip.x, top: hoverTooltip.y }}
+          role="status"
+        >
+          <strong>{hoverTooltip.name}</strong>
+          <b>{hoverTooltip.value}</b>
+          <span>{hoverTooltip.label}</span>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -383,6 +428,99 @@ function selectArea(feature: MapGeoJSONFeature | undefined, onAreaSelect: (areaI
   if (typeof areaId === "string") {
     onAreaSelect(areaId);
   }
+}
+
+function selectAreaAtSearchPoint(
+  map: MapLibreMap,
+  flyToRequest: FlyToRequest,
+  onAreaSelect: (areaId: string) => void
+) {
+  const point = map.project(flyToRequest.center as LngLatLike);
+  const box: [[number, number], [number, number]] = [
+    [point.x - 7, point.y - 7],
+    [point.x + 7, point.y + 7]
+  ];
+  const exactFeatures = map.queryRenderedFeatures(point, { layers: ["areas-fill"] });
+  const nearbyFeatures = map.queryRenderedFeatures(box, { layers: ["areas-fill"] });
+  const features = dedupeFeatures([...exactFeatures, ...nearbyFeatures]);
+  const matchName = normalizeSearchName(flyToRequest.matchName ?? flyToRequest.label ?? "");
+  const matchedFeature = matchName
+    ? features.find((feature) => normalizeSearchName(String(feature.properties?.name ?? "")).includes(matchName))
+    : null;
+
+  selectArea(matchedFeature ?? features[0], onAreaSelect);
+}
+
+function dedupeFeatures(features: readonly MapGeoJSONFeature[]): readonly MapGeoJSONFeature[] {
+  const seen = new Set<string>();
+  return features.filter((feature) => {
+    const id = String(feature.properties?.id ?? feature.id ?? "");
+
+    if (!id || seen.has(id)) {
+      return false;
+    }
+
+    seen.add(id);
+    return true;
+  });
+}
+
+function createHoverTooltip(
+  feature: MapGeoJSONFeature,
+  x: number,
+  y: number,
+  metric: MetricDefinition,
+  metricProperty: string,
+  locale: LocaleCode
+) {
+  const value = typeof feature.properties?.[metricProperty] === "number"
+    ? feature.properties[metricProperty]
+    : Number(feature.properties?.[metricProperty]);
+
+  return {
+    x,
+    y,
+    name: String(feature.properties?.name ?? ""),
+    value: formatMetricValue(Number.isFinite(value) ? value : null, metric, locale),
+    label: getLocalizedText(metric.shortLabel, locale)
+  };
+}
+
+function updateHoverFeature(
+  map: MapLibreMap,
+  hoverFeatureIdRef: MutableRefObject<string | number | null>,
+  feature: MapGeoJSONFeature
+) {
+  const featureId = feature.id ?? feature.properties?.id;
+
+  if (featureId === undefined || featureId === hoverFeatureIdRef.current) {
+    return;
+  }
+
+  clearHoverFeature(map, hoverFeatureIdRef);
+  hoverFeatureIdRef.current = featureId;
+  map.setFeatureState({ source: "areas", sourceLayer: areaSourceLayer, id: featureId }, { hover: true });
+}
+
+function clearHoverFeature(
+  map: MapLibreMap,
+  hoverFeatureIdRef: MutableRefObject<string | number | null>
+) {
+  if (hoverFeatureIdRef.current === null) {
+    return;
+  }
+
+  map.setFeatureState({ source: "areas", sourceLayer: areaSourceLayer, id: hoverFeatureIdRef.current }, { hover: false });
+  hoverFeatureIdRef.current = null;
+}
+
+function normalizeSearchName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function createPoiPopupHtml(feature: MapGeoJSONFeature): string {

@@ -12,42 +12,48 @@ export const choroplethColors = {
 export function createIncomeColorExpression(
   domain: readonly [number, number],
   property = "value",
-  theme: "light" | "dark" = "light"
+  theme: "light" | "dark" = "light",
+  stops?: readonly number[]
 ): ExpressionSpecification {
   const [min, max] = domain;
   const missingColor = theme === "dark" ? "#2f3438" : choroplethColors.missing;
+  const colorStops = stops?.length ? stops : null;
+  const numericStops = colorStops
+    ? [
+        colorStops[0],
+        colorStops[Math.max(1, Math.floor((colorStops.length - 1) * 0.25))],
+        colorStops[Math.max(1, Math.floor((colorStops.length - 1) * 0.5))],
+        colorStops[Math.max(1, Math.floor((colorStops.length - 1) * 0.75))],
+        colorStops[colorStops.length - 1]
+      ]
+    : [min, min + ((max - min || 1) * 0.25), min + ((max - min || 1) * 0.5), min + ((max - min || 1) * 0.75), max];
 
-  if (min === max) {
+  if (!colorStops && min === max) {
     return [
       "case",
-      ["!", ["has", property]],
+      ["any", ["!", ["has", property]], ["==", ["get", property], null]],
       missingColor,
       choroplethColors.middle
     ];
   }
 
-  const spread = max - min || 1;
-  const q1 = min + spread * 0.25;
-  const q2 = min + spread * 0.5;
-  const q3 = min + spread * 0.75;
-
   return [
     "case",
-    ["!", ["has", property]],
+    ["any", ["!", ["has", property]], ["==", ["get", property], null]],
     missingColor,
     [
       "interpolate",
       ["linear"],
       ["to-number", ["get", property]],
-      min,
+      numericStops[0],
       choroplethColors.low,
-      q1,
+      numericStops[1],
       choroplethColors.middleLow,
-      q2,
+      numericStops[2],
       choroplethColors.middle,
-      q3,
+      numericStops[3],
       choroplethColors.middleHigh,
-      max,
+      numericStops[4] ?? numericStops[3],
       choroplethColors.high
     ]
   ];
@@ -56,29 +62,41 @@ export function createIncomeColorExpression(
 export function createExtrusionHeightExpression(
   domain: readonly [number, number],
   property = "value",
-  enabled = true
+  enabled = true,
+  stops?: readonly number[]
 ): ExpressionSpecification {
   if (!enabled) {
     return ["case", true, 0, 0];
   }
 
   const [min, max] = domain;
+  const heightStops = stops?.length
+    ? [stops[0], stops[Math.floor((stops.length - 1) / 2)], stops[stops.length - 1]]
+    : [min, min + ((max - min || 1) * 0.5), max];
 
-  if (min === max) {
-    return ["case", ["!", ["has", property]], 0, 6000];
+  if (!stops?.length && min === max) {
+    return [
+      "case",
+      ["any", ["!", ["has", property]], ["==", ["get", property], null], ["<=", ["to-number", ["get", property]], 0]],
+      0,
+      6000
+    ];
   }
 
-  const spread = max - min || 1;
-
   return [
-    "interpolate",
-    ["linear"],
-    ["to-number", ["get", property]],
-    min,
-    1800,
-    min + spread * 0.5,
-    8500,
-    max,
-    16000
+    "case",
+    ["any", ["!", ["has", property]], ["==", ["get", property], null], ["<=", ["to-number", ["get", property]], 0]],
+    0,
+    [
+      "interpolate",
+      ["linear"],
+      ["to-number", ["get", property]],
+      heightStops[0],
+      400,
+      heightStops[1],
+      9000,
+      heightStops[2],
+      36000
+    ]
   ];
 }

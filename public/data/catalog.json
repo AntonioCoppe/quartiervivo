@@ -136,6 +136,35 @@
       }
     },
     {
+      "id": "income_per_capita",
+      "group": "income",
+      "label": {
+        "en": "Declared income per capita (€)",
+        "it": "Reddito dichiarato pro capite (€)"
+      },
+      "shortLabel": {
+        "en": "Income per capita",
+        "it": "Reddito pro capite"
+      },
+      "unit": "EUR",
+      "year": 2024,
+      "sourceId": "mef-irpef-comune",
+      "granularity": "municipality",
+      "tileProperty": "income_per_capita",
+      "colorStops": [
+        8000,
+        12000,
+        16000,
+        20000,
+        24000,
+        28000
+      ],
+      "description": {
+        "en": "MEF total declared income divided by ISTAT resident population for the same comune where both sources are available.",
+        "it": "Reddito complessivo dichiarato MEF diviso per popolazione residente ISTAT dello stesso comune quando entrambe le fonti sono disponibili."
+      }
+    },
+    {
       "id": "income_per_taxpayer",
       "group": "income",
       "label": {
@@ -143,17 +172,67 @@
         "it": "Reddito medio per contribuente (€)"
       },
       "shortLabel": {
-        "en": "Income",
-        "it": "Reddito"
+        "en": "Income/taxpayer",
+        "it": "Reddito/contrib."
       },
       "unit": "EUR",
       "year": 2024,
       "sourceId": "mef-irpef-comune",
       "granularity": "municipality",
       "tileProperty": "income_per_taxpayer",
+      "colorStops": [
+        8000,
+        12000,
+        16000,
+        20000,
+        24000,
+        28000
+      ],
       "description": {
-        "en": "MEF total income divided by taxpayer count.",
-        "it": "Reddito complessivo MEF diviso per numero di contribuenti."
+        "en": "MEF total declared income divided by taxpayer count.",
+        "it": "Reddito complessivo dichiarato MEF diviso per numero di contribuenti."
+      }
+    },
+    {
+      "id": "taxpayer_count",
+      "group": "income",
+      "label": {
+        "en": "Taxpayers",
+        "it": "Contribuenti"
+      },
+      "shortLabel": {
+        "en": "Taxpayers",
+        "it": "Contribuenti"
+      },
+      "unit": "count",
+      "year": 2024,
+      "sourceId": "mef-irpef-comune",
+      "granularity": "municipality",
+      "tileProperty": "taxpayer_count",
+      "description": {
+        "en": "Number of taxpayers in the MEF municipal declarations file.",
+        "it": "Numero di contribuenti nel file comunale delle dichiarazioni MEF."
+      }
+    },
+    {
+      "id": "taxpayer_share_percent",
+      "group": "income",
+      "label": {
+        "en": "Taxpayers per resident (%)",
+        "it": "Contribuenti per residente (%)"
+      },
+      "shortLabel": {
+        "en": "Taxpayer share",
+        "it": "Quota contrib."
+      },
+      "unit": "percent",
+      "year": 2024,
+      "sourceId": "mef-irpef-comune",
+      "granularity": "municipality",
+      "tileProperty": "taxpayer_share_percent",
+      "description": {
+        "en": "Taxpayer count divided by resident population. This is not an employment rate.",
+        "it": "Numero di contribuenti diviso per popolazione residente. Non e un tasso di occupazione."
       }
     },
     {

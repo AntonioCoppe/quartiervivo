@@ -6,6 +6,7 @@ import {
   findMetricValue,
   formatMetricValue,
   getMetricDomain,
+  getMetricColorStops,
   rankAreas
 } from "../src/domain/metrics";
 
@@ -60,5 +61,18 @@ describe("metric helpers", () => {
     expect(createLegendStops([10000, 30000], 3)).toEqual([10000, 20000, 30000]);
     expect(createLegendStops([5, 5], 3)).toEqual([5, 5, 5]);
     expect(createLegendStops([10, 20], 1)).toEqual([10]);
+  });
+
+  it("uses fixed income stops when the metric declares them", () => {
+    const incomeMetric = metrics.find((metric) => metric.id === "income_per_capita") ?? metrics[0];
+
+    expect(getMetricColorStops(incomeMetric, [10000, 50000])).toEqual([
+      8000,
+      12000,
+      16000,
+      20000,
+      24000,
+      28000
+    ]);
   });
 });

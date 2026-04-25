@@ -56,6 +56,7 @@ export interface MetricDefinition {
   readonly sourceId: string;
   readonly granularity: Granularity;
   readonly tileProperty?: string;
+  readonly colorStops?: readonly number[];
   readonly description: LocalizedText;
 }
 
@@ -134,16 +135,24 @@ export interface RankedArea {
   readonly rank: number;
 }
 
+export interface MetricSeries {
+  readonly years: readonly number[];
+  readonly values: readonly (number | null)[];
+  readonly nationalValues?: readonly (number | null)[];
+}
+
 export interface AreaDetail {
   readonly id: string;
   readonly name: string;
   readonly city: string;
   readonly region: string;
+  readonly istatCode?: string;
   readonly province?: string;
   readonly areaLevel: AreaLevel;
   readonly granularity: Granularity;
   readonly sourceIds?: readonly string[];
   readonly metrics: Record<string, number | null>;
+  readonly metricSeries?: Record<string, MetricSeries>;
   readonly ageStructure: {
     readonly under15: number | null;
     readonly age15To64: number | null;
@@ -168,6 +177,7 @@ export interface GeocoderResult {
   readonly label: string;
   readonly center: readonly [number, number];
   readonly type: string;
+  readonly matchName?: string;
 }
 
 export interface FlyToRequest {
@@ -175,5 +185,6 @@ export interface FlyToRequest {
   readonly center: readonly [number, number];
   readonly zoom: number;
   readonly label?: string;
+  readonly matchName?: string;
   readonly selectAtCenter?: boolean;
 }

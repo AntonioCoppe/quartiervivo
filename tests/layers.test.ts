@@ -18,28 +18,33 @@ describe("map layer expressions", () => {
     const expression = createExtrusionHeightExpression([10000, 30000]);
 
     expect(expression).toEqual([
-      "interpolate",
-      ["linear"],
-      ["to-number", ["get", "value"]],
-      10000,
-      1800,
-      20000,
-      8500,
-      30000,
-      16000
+      "case",
+      ["any", ["!", ["has", "value"]], ["==", ["get", "value"], null], ["<=", ["to-number", ["get", "value"]], 0]],
+      0,
+      [
+        "interpolate",
+        ["linear"],
+        ["to-number", ["get", "value"]],
+        10000,
+        400,
+        20000,
+        9000,
+        30000,
+        36000
+      ]
     ]);
   });
 
   it("keeps layer expressions valid when all values are equal", () => {
     expect(createIncomeColorExpression([20000, 20000])).toEqual([
       "case",
-      ["!", ["has", "value"]],
+      ["any", ["!", ["has", "value"]], ["==", ["get", "value"], null]],
       choroplethColors.missing,
       choroplethColors.middle
     ]);
     expect(createExtrusionHeightExpression([20000, 20000])).toEqual([
       "case",
-      ["!", ["has", "value"]],
+      ["any", ["!", ["has", "value"]], ["==", ["get", "value"], null], ["<=", ["to-number", ["get", "value"]], 0]],
       0,
       6000
     ]);

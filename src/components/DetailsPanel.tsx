@@ -1,6 +1,11 @@
-import { Download, Share2, X } from "lucide-react";
-import { formatMetricValue, getLocalizedText } from "../domain/metrics";
-import type { AreaDetail, LocaleCode, MetricDefinition } from "../types/geography";
+import { Share2, X } from "lucide-react";
+import {
+  formatMetricValue,
+  formatTrendDelta,
+  getLocalizedText,
+  getMetricSeries
+} from "../domain/metrics";
+import type { AreaDetail, LocaleCode, MetricDefinition, MetricSeries } from "../types/geography";
 
 interface DetailsPanelProps {
   readonly detail: AreaDetail;
@@ -12,94 +17,168 @@ interface DetailsPanelProps {
 
 const labels = {
   en: {
-    areaKind: "COMUNE",
+    areaKind: "MUNICIPALITY",
+    code: "Code",
     population: "Population",
-    income: "Average income",
+    income: "Income",
     employment: "Employment rate",
     foreignBorn: "Foreign-born",
     education: "Higher education",
     gini: "Inequality (Gini)",
     age: "Age structure",
+    under15: "Under 15",
+    age15To64: "15-64",
+    age65Plus: "65+",
     origin: "Foreign-born by region",
+    europe: "Europe",
+    africa: "Africa",
+    americas: "Americas",
+    asia: "Asia",
     sector: "Economic sectors",
+    agriculture: "Agriculture",
+    industry: "Industry",
+    construction: "Construction",
+    services: "Services",
+    italy: "Italy",
     source: "Source",
     share: "Share as card",
     close: "Close panel",
-    missing: "Not available in current local dataset"
+    missing: "Not available from the current local source bundle"
   },
   it: {
     areaKind: "COMUNE",
+    code: "Codice",
     population: "Popolazione",
-    income: "Reddito medio",
+    income: "Reddito",
     employment: "Tasso occupazione",
     foreignBorn: "Nati all'estero",
-    education: "Istr. superiore",
+    education: "Istruzione superiore",
     gini: "Disuguaglianza (Gini)",
     age: "Struttura di eta",
+    under15: "Sotto 15",
+    age15To64: "15-64",
+    age65Plus: "65+",
     origin: "Nati all'estero per regione",
+    europe: "Europa",
+    africa: "Africa",
+    americas: "Americhe",
+    asia: "Asia",
     sector: "Settori economici",
+    agriculture: "Agricoltura",
+    industry: "Industria",
+    construction: "Costruzioni",
+    services: "Servizi",
+    italy: "Italia",
     source: "Fonte",
     share: "Condividi come card",
     close: "Chiudi pannello",
-    missing: "Non disponibile nel dataset locale attuale"
+    missing: "Non disponibile nel bundle locale attuale"
   }
 } as const;
 
 export function DetailsPanel({ detail, locale, metric, metrics, onClose }: DetailsPanelProps) {
   const copy = labels[locale];
   const populationMetric = findMetric(metrics, "resident_population") ?? metric;
-  const incomeMetric = findMetric(metrics, "income_per_taxpayer") ?? metric;
-  const employmentMetric = findMetric(metrics, "employment_rate") ?? metric;
-  const educationMetric = findMetric(metrics, "higher_education_percent") ?? metric;
+  const incomeMetric = metric.group === "income"
+    ? metric
+    : findMetric(metrics, "income_per_capita") ?? findMetric(metrics, "income_per_taxpayer") ?? metric;
+  const employmentMetric = findMetric(metrics, "employment_rate") ?? syntheticMetric("employment_rate", "percent", metric);
+  const educationMetric = findMetric(metrics, "higher_education_percent") ?? syntheticMetric("higher_education_percent", "percent", metric);
+  const foreignBornMetric = syntheticMetric("foreign_born_percent", "percent", metric);
+  const giniMetric = syntheticMetric("gini_index", "index", metric);
 
   return (
     <aside className="details-panel" aria-label="Selected area details">
       <div className="details-header">
         <span>{copy.areaKind}</span>
-        <button type="button" aria-label={copy.share} onClick={() => shareAreaCard(detail, locale, metrics)}>
-          <Share2 size={14} aria-hidden="true" />
+        <button type="button" aria-label={copy.share} onClick={() => void shareAreaCard(detail, locale, metrics)}>
+          <Share2 size={16} aria-hidden="true" />
         </button>
         <button type="button" aria-label={copy.close} onClick={onClose}>
-          <X size={15} aria-hidden="true" />
+          <X size={17} aria-hidden="true" />
         </button>
       </div>
 
-      <h2>{detail.name}</h2>
-      <p>
-        {detail.province ? `${detail.province} · ` : ""}
-        {detail.region}
-      </p>
-
-      <div className="detail-metric hero">
-        <span>{copy.population}</span>
-        <strong>{formatMetricValue(detail.metrics.resident_population ?? null, populationMetric, locale)}</strong>
-        <em>{populationMetric.year}</em>
+      <div className="details-title">
+        <h2>{detail.name}</h2>
+        <p>{copy.code} {detail.istatCode ?? detail.id.replace(/^comune-/, "")}</p>
       </div>
+
+      <TrendMetric
+        detail={detail}
+        label={copy.population}
+        locale={locale}
+        metric={populationMetric}
+        metricId="resident_population"
+        nationalLabel={copy.italy}
+      />
+
+      <TrendMetric
+        detail={detail}
+        label={getLocalizedText(incomeMetric.label, locale)}
+        locale={locale}
+        metric={incomeMetric}
+        metricId={incomeMetric.id}
+        nationalLabel={copy.italy}
+      />
 
       <div className="detail-grid">
-        <MetricTile label={copy.income} value={detail.metrics.income_per_taxpayer ?? null} metric={incomeMetric} locale={locale} />
-        <MetricTile label={copy.employment} value={detail.metrics.employment_rate ?? null} metric={employmentMetric} locale={locale} />
-        <MetricTile label={copy.foreignBorn} value={null} metric={{ ...metric, unit: "percent" }} locale={locale} />
-        <MetricTile label={copy.education} value={detail.metrics.higher_education_percent ?? null} metric={educationMetric} locale={locale} />
-        <MetricTile label={copy.gini} value={null} metric={{ ...metric, unit: "index" }} locale={locale} />
+        <TrendTile
+          detail={detail}
+          label={copy.employment}
+          locale={locale}
+          metric={employmentMetric}
+          metricId="employment_rate"
+          nationalLabel={copy.italy}
+        />
+        <TrendTile
+          detail={detail}
+          label={copy.foreignBorn}
+          locale={locale}
+          metric={foreignBornMetric}
+          metricId="foreign_born_percent"
+          nationalLabel={copy.italy}
+        />
+        <TrendTile
+          detail={detail}
+          label={copy.education}
+          locale={locale}
+          metric={educationMetric}
+          metricId="higher_education_percent"
+          nationalLabel={copy.italy}
+        />
+        <TrendTile
+          detail={detail}
+          label={copy.gini}
+          locale={locale}
+          metric={giniMetric}
+          metricId="gini_index"
+          nationalLabel={copy.italy}
+        />
       </div>
 
-      <Breakdown title={copy.age} rows={[
-        ["<15", detail.ageStructure.under15],
-        ["15-64", detail.ageStructure.age15To64],
-        ["65+", detail.ageStructure.age65Plus]
+      <AgeStructure
+        labels={[copy.under15, copy.age15To64, copy.age65Plus]}
+        locale={locale}
+        title={copy.age}
+        values={[
+          detail.ageStructure.under15,
+          detail.ageStructure.age15To64,
+          detail.ageStructure.age65Plus
+        ]}
+      />
+
+      <Breakdown title={copy.origin} locale={locale} rows={[
+        [copy.europe, detail.originBreakdown.europe],
+        [copy.americas, detail.originBreakdown.americas],
+        [copy.africa, detail.originBreakdown.africa],
+        [copy.asia, detail.originBreakdown.asia]
       ]} />
-      <Breakdown title={copy.origin} rows={[
-        ["Europe", detail.originBreakdown.europe],
-        ["Africa", detail.originBreakdown.africa],
-        ["Americas", detail.originBreakdown.americas],
-        ["Asia", detail.originBreakdown.asia]
-      ]} />
-      <Breakdown title={copy.sector} rows={[
-        ["Agriculture", detail.sectorBreakdown.agriculture],
-        ["Industry", detail.sectorBreakdown.industry],
-        ["Construction", detail.sectorBreakdown.construction],
-        ["Services", detail.sectorBreakdown.services]
+      <Breakdown title={copy.sector} locale={locale} rows={[
+        [copy.services, detail.sectorBreakdown.services],
+        [copy.industry, detail.sectorBreakdown.industry],
+        [copy.construction, detail.sectorBreakdown.construction],
+        [copy.agriculture, detail.sectorBreakdown.agriculture]
       ]} />
 
       <footer>
@@ -110,29 +189,142 @@ export function DetailsPanel({ detail, locale, metric, metrics, onClose }: Detai
   );
 }
 
-interface MetricTileProps {
+interface TrendMetricProps {
+  readonly detail: AreaDetail;
   readonly label: string;
-  readonly value: number | null;
-  readonly metric: MetricDefinition;
   readonly locale: LocaleCode;
+  readonly metric: MetricDefinition;
+  readonly metricId: string;
+  readonly nationalLabel: string;
 }
 
-function MetricTile({ label, value, metric, locale }: MetricTileProps) {
+function TrendMetric({ detail, label, locale, metric, metricId, nationalLabel }: TrendMetricProps) {
+  const series = getMetricSeries(detail, metricId);
+  const value = detail.metrics[metricId] ?? getLastSeriesValue(series);
+  const delta = formatTrendDelta(series, metric, locale);
+  const trendClass = delta.startsWith("-") ? "down" : "up";
+
   return (
-    <div className="detail-metric">
-      <span>{label}</span>
-      <strong>{formatMetricValue(value, metric, locale)}</strong>
-      <em>{metric.year}</em>
+    <section className="detail-trend hero">
+      <div className="detail-trend-label">{label}</div>
+      <div className="detail-value-line">
+        <strong>{formatMetricValue(value, metric, locale)}</strong>
+        <em className={trendClass}>{delta}</em>
+      </div>
+      <Sparkline series={series} />
+      <SeriesYears series={series} />
+      {series?.nationalValues?.some((item) => item !== null) ? (
+        <span className="national-key">--- {nationalLabel}</span>
+      ) : null}
+    </section>
+  );
+}
+
+function TrendTile(props: TrendMetricProps) {
+  const series = getMetricSeries(props.detail, props.metricId);
+  const value = props.detail.metrics[props.metricId] ?? getLastSeriesValue(series);
+  const delta = formatTrendDelta(series, props.metric, props.locale);
+
+  return (
+    <section className="detail-trend tile">
+      <div className="detail-trend-label">{props.label}</div>
+      <div className="detail-value-line compact">
+        <strong>{formatMetricValue(value, props.metric, props.locale)}</strong>
+        <em className={delta.startsWith("-") ? "down" : "up"}>{delta}</em>
+      </div>
+      <Sparkline series={series} compact />
+      {series?.nationalValues?.some((item) => item !== null) ? (
+        <span className="national-key">--- {props.nationalLabel}</span>
+      ) : null}
+    </section>
+  );
+}
+
+function Sparkline({ series, compact = false }: { readonly series: MetricSeries | null; readonly compact?: boolean }) {
+  const values = series?.values ?? [];
+  const nationalValues = series?.nationalValues ?? [];
+  const combinedValues = [...values, ...nationalValues].filter((value): value is number => value !== null && Number.isFinite(value));
+
+  if (combinedValues.length < 2 || !series) {
+    return <div className={compact ? "sparkline compact empty" : "sparkline empty"} />;
+  }
+
+  const min = Math.min(...combinedValues);
+  const max = Math.max(...combinedValues);
+  const range = max - min || 1;
+  const width = 220;
+  const height = compact ? 46 : 72;
+  const points = createPolyline(values, min, range, width, height);
+  const nationalPoints = createPolyline(nationalValues, min, range, width, height);
+
+  return (
+    <svg className={compact ? "sparkline compact" : "sparkline"} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      {nationalPoints ? <polyline className="sparkline-national" points={nationalPoints} /> : null}
+      {points ? <polyline className="sparkline-local" points={points} /> : null}
+      {points ? <circle className="sparkline-dot" {...getLastPoint(points)} r="2.2" /> : null}
+    </svg>
+  );
+}
+
+function SeriesYears({ series }: { readonly series: MetricSeries | null }) {
+  if (!series) {
+    return null;
+  }
+
+  const firstIndex = series.values.findIndex((value) => value !== null);
+  const lastIndex = findLastValueIndex(series.values);
+
+  if (firstIndex < 0 || lastIndex < 0) {
+    return null;
+  }
+
+  return (
+    <div className="series-years">
+      <span>{series.years[firstIndex]}</span>
+      <span>{series.years[lastIndex]}</span>
     </div>
+  );
+}
+
+function AgeStructure({
+  labels: rowLabels,
+  locale,
+  title,
+  values
+}: {
+  readonly labels: readonly string[];
+  readonly locale: LocaleCode;
+  readonly title: string;
+  readonly values: readonly (number | null)[];
+}) {
+  const safeValues = values.map((value) => value ?? 0);
+
+  return (
+    <section className="age-structure">
+      <h3>{title}</h3>
+      <div className="age-stack" aria-hidden="true">
+        <i style={{ width: `${safeValues[0]}%` }} />
+        <i style={{ width: `${safeValues[1]}%` }} />
+        <i style={{ width: `${safeValues[2]}%` }} />
+      </div>
+      {rowLabels.map((label, index) => (
+        <div className="age-row" key={label}>
+          <span className={`age-swatch age-${index}`} />
+          <span>{label}</span>
+          <b>{formatPercent(values[index], locale)}</b>
+        </div>
+      ))}
+    </section>
   );
 }
 
 interface BreakdownProps {
   readonly title: string;
+  readonly locale: LocaleCode;
   readonly rows: readonly (readonly [string, number | null])[];
 }
 
-function Breakdown({ title, rows }: BreakdownProps) {
+function Breakdown({ title, locale, rows }: BreakdownProps) {
   return (
     <section className="breakdown">
       <h3>{title}</h3>
@@ -140,57 +332,185 @@ function Breakdown({ title, rows }: BreakdownProps) {
         <div className="breakdown-row" key={label}>
           <span>{label}</span>
           <div>
-            <i style={{ width: `${Math.max(value ?? 0, 2)}%` }} />
+            <i style={{ width: `${Math.max(value ?? 0, value === null ? 0 : 2)}%` }} />
           </div>
-          <b>{value === null ? "N/D" : `${value.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`}</b>
+          <b>{formatPercent(value, locale)}</b>
         </div>
       ))}
     </section>
   );
 }
 
+function createPolyline(
+  values: readonly (number | null)[],
+  min: number,
+  range: number,
+  width: number,
+  height: number
+): string | null {
+  const points = values
+    .map((value, index) => {
+      if (value === null || !Number.isFinite(value)) {
+        return null;
+      }
+
+      const x = values.length <= 1 ? 0 : (index / (values.length - 1)) * width;
+      const y = height - ((value - min) / range) * (height - 8) - 4;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .filter((point): point is string => point !== null);
+
+  return points.length > 1 ? points.join(" ") : null;
+}
+
+function getLastPoint(points: string) {
+  const allPoints = points.split(" ");
+  const [x = "0", y = "0"] = allPoints[allPoints.length - 1]?.split(",") ?? [];
+  return { cx: Number(x), cy: Number(y) };
+}
+
+function getLastSeriesValue(series: MetricSeries | null): number | null {
+  if (!series) {
+    return null;
+  }
+
+  for (let index = series.values.length - 1; index >= 0; index -= 1) {
+    const value = series.values[index];
+
+    if (value !== null && Number.isFinite(value)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function findLastValueIndex(values: readonly (number | null)[]): number {
+  for (let index = values.length - 1; index >= 0; index -= 1) {
+    if (values[index] !== null) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function formatPercent(value: number | null, locale: LocaleCode): string {
+  if (value === null || !Number.isFinite(value)) {
+    return locale === "it" ? "N/D" : "N/A";
+  }
+
+  return `${value.toLocaleString(locale === "it" ? "it-IT" : "en-US", { maximumFractionDigits: 1 })}%`;
+}
+
 function findMetric(metrics: readonly MetricDefinition[], metricId: string): MetricDefinition | undefined {
   return metrics.find((candidate) => candidate.id === metricId);
 }
 
-function shareAreaCard(detail: AreaDetail, locale: LocaleCode, metrics: readonly MetricDefinition[]) {
-  const populationMetric = findMetric(metrics, "resident_population");
-  const incomeMetric = findMetric(metrics, "income_per_taxpayer");
-  const population = populationMetric
-    ? formatMetricValue(detail.metrics.resident_population ?? null, populationMetric, locale)
-    : "N/D";
-  const income = incomeMetric
-    ? formatMetricValue(detail.metrics.income_per_taxpayer ?? null, incomeMetric, locale)
-    : "N/D";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
-  <rect width="900" height="520" fill="#111418"/>
-  <rect x="36" y="36" width="828" height="448" rx="22" fill="#f8f5ef"/>
-  <text x="78" y="112" font-family="Menlo, monospace" font-size="22" fill="#85817a">MappaQuartieri</text>
-  <text x="78" y="190" font-family="Menlo, monospace" font-size="54" font-weight="800" fill="#17191c">${escapeXml(detail.name)}</text>
-  <text x="78" y="242" font-family="Menlo, monospace" font-size="24" fill="#67615b">${escapeXml(detail.region)}</text>
-  <text x="78" y="342" font-family="Menlo, monospace" font-size="22" fill="#85817a">Population</text>
-  <text x="78" y="392" font-family="Menlo, monospace" font-size="42" font-weight="800" fill="#17191c">${population}</text>
-  <text x="474" y="342" font-family="Menlo, monospace" font-size="22" fill="#85817a">Income</text>
-  <text x="474" y="392" font-family="Menlo, monospace" font-size="42" font-weight="800" fill="#17191c">${income}</text>
-</svg>`;
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+function syntheticMetric(
+  id: string,
+  unit: MetricDefinition["unit"],
+  fallback: MetricDefinition
+): MetricDefinition {
+  return {
+    ...fallback,
+    id,
+    unit,
+    tileProperty: id
+  };
+}
+
+async function shareAreaCard(detail: AreaDetail, locale: LocaleCode, metrics: readonly MetricDefinition[]) {
+  const blob = await renderAreaCard(detail, locale, metrics);
+  const fileName = `${detail.id}-mappaquartieri-card.png`;
+  const file = new File([blob], fileName, { type: "image/png" });
+
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: detail.name });
+    return;
+  }
+
+  if (navigator.clipboard && "ClipboardItem" in window) {
+    await navigator.clipboard.write([
+      new window.ClipboardItem({ "image/png": blob })
+    ]);
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${detail.id}-mappaquartieri-card.svg`;
+  anchor.download = fileName;
   anchor.click();
   URL.revokeObjectURL(url);
 }
 
-function escapeXml(value: string): string {
-  return value.replace(/[<>&'"]/g, (character) => {
-    const replacements: Record<string, string> = {
-      "<": "&lt;",
-      ">": "&gt;",
-      "&": "&amp;",
-      "'": "&apos;",
-      "\"": "&quot;"
-    };
+async function renderAreaCard(
+  detail: AreaDetail,
+  locale: LocaleCode,
+  metrics: readonly MetricDefinition[]
+): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = 960;
+  canvas.height = 560;
+  const context = canvas.getContext("2d");
 
-    return replacements[character] ?? character;
+  if (!context) {
+    throw new Error("Canvas unavailable.");
+  }
+
+  const populationMetric = findMetric(metrics, "resident_population") ?? metrics[0];
+  const incomeMetric = findMetric(metrics, "income_per_capita") ?? findMetric(metrics, "income_per_taxpayer") ?? metrics[0];
+
+  context.fillStyle = "#111418";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#f7f7f5";
+  roundedRect(context, 44, 44, 872, 472, 18);
+  context.fill();
+
+  context.fillStyle = "#8d9297";
+  context.font = "20px Menlo, monospace";
+  context.fillText("MappaQuartieri", 86, 116);
+  context.fillStyle = "#17191c";
+  context.font = "700 54px Menlo, monospace";
+  context.fillText(detail.name.slice(0, 24), 86, 194);
+  context.fillStyle = "#646a70";
+  context.font = "22px Menlo, monospace";
+  context.fillText([detail.province, detail.region].filter(Boolean).join(" · "), 86, 246);
+  context.fillStyle = "#8d9297";
+  context.font = "18px Menlo, monospace";
+  context.fillText(locale === "it" ? "Popolazione" : "Population", 86, 346);
+  context.fillText(getLocalizedText(incomeMetric.shortLabel, locale), 504, 346);
+  context.fillStyle = "#17191c";
+  context.font = "700 40px Menlo, monospace";
+  context.fillText(formatMetricValue(detail.metrics.resident_population ?? null, populationMetric, locale), 86, 398);
+  context.fillText(formatMetricValue(detail.metrics[incomeMetric.id] ?? null, incomeMetric, locale), 504, 398);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+
+      reject(new Error("Unable to render share card."));
+    }, "image/png");
   });
+}
+
+function roundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.arcTo(x + width, y, x + width, y + height, radius);
+  context.arcTo(x + width, y + height, x, y + height, radius);
+  context.arcTo(x, y + height, x, y, radius);
+  context.arcTo(x, y, x + width, y, radius);
+  context.closePath();
 }

@@ -95,7 +95,7 @@ function createDefaultPoiState(): Record<PoiCategory, boolean> {
 export default function App() {
   const [appData, setAppData] = useState<AppData | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [selectedMetricId, setSelectedMetricId] = useState("income_per_taxpayer");
+  const [selectedMetricId, setSelectedMetricId] = useState("income_per_capita");
   const [activeCity, setActiveCity] = useState<CityShortcut>(cityShortcuts[0]);
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
   const [poiVisibility, setPoiVisibility] = useState(createDefaultPoiState);
@@ -177,6 +177,15 @@ export default function App() {
     setSidebarCollapsed(false);
   };
 
+  const handleMiniMapSelect = (center: readonly [number, number]) => {
+    setFlyToRequest({
+      id: Date.now(),
+      center,
+      zoom: 7.6,
+      selectAtCenter: false
+    });
+  };
+
   const handleResultSelect = (result: GeocoderResult) => {
     setSearchStatus(labels.searchMoved);
     setFlyToRequest({
@@ -184,6 +193,7 @@ export default function App() {
       center: result.center,
       zoom: result.type === "city" || result.type === "administrative" ? 10.8 : 13.5,
       label: result.label,
+      matchName: result.matchName,
       selectAtCenter: true
     });
   };
@@ -234,6 +244,7 @@ export default function App() {
         onCitySelect={handleCitySelect}
         onCollapse={() => setSidebarCollapsed(true)}
         onMetricChange={setSelectedMetricId}
+        onMiniMapSelect={handleMiniMapSelect}
         onTogglePoi={handleTogglePoi}
       />
 
@@ -298,6 +309,7 @@ export default function App() {
           domain={metricDomain}
           flyToRequest={flyToRequest}
           is3d={is3d}
+          locale={locale}
           metric={selectedMetric}
           pois={pois}
           poiVisibility={poiVisibility}

@@ -16,6 +16,7 @@ interface NominatimResult {
   readonly lon: string;
   readonly type?: string;
   readonly class?: string;
+  readonly address?: Record<string, string>;
 }
 
 export function AddressSearch({
@@ -117,10 +118,21 @@ export function AddressSearch({
 }
 
 function normalizeResult(result: NominatimResult): GeocoderResult {
+  const address = result.address ?? {};
+  const matchName =
+    address.city ??
+    address.town ??
+    address.village ??
+    address.municipality ??
+    address.hamlet ??
+    address.county ??
+    result.display_name.split(",")[0]?.trim();
+
   return {
     id: String(result.place_id),
     label: result.display_name,
     center: [Number(result.lon), Number(result.lat)],
-    type: result.type ?? result.class ?? "place"
+    type: result.type ?? result.class ?? "place",
+    matchName
   };
 }
