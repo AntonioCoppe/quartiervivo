@@ -2,6 +2,8 @@ import maplibregl, {
   type LngLatLike,
   type Map as MapLibreMap,
   type MapGeoJSONFeature,
+  type MapMouseEvent,
+  type PointLike,
   type Popup
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -106,6 +108,7 @@ export function MapPanel({
   const hoverFeatureIdRef = useRef<string | number | null>(null);
   const metricRef = useRef(metric);
   const metricPropertyRef = useRef(metric.tileProperty ?? metric.id);
+  const is3dRef = useRef(is3d);
   const localeRef = useRef(locale);
   const [mapError, setMapError] = useState<string | null>(null);
   const [hoverTooltip, setHoverTooltip] = useState<{
@@ -126,8 +129,9 @@ export function MapPanel({
   useEffect(() => {
     metricRef.current = metric;
     metricPropertyRef.current = metricProperty;
+    is3dRef.current = is3d;
     localeRef.current = locale;
-  }, [locale, metric, metricProperty]);
+  }, [is3d, locale, metric, metricProperty]);
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current) {
@@ -243,8 +247,15 @@ export function MapPanel({
         }
       });
 
-      map.on("click", "areas-fill", (event) => selectArea(event.features?.[0], onAreaSelect));
-      map.on("click", "areas-extrusion", (event) => selectArea(event.features?.[0], onAreaSelect));
+      map.on("click", (event: MapMouseEvent) => {
+        const poiFeatures = map.queryRenderedFeatures(event.point, { layers: ["poi-circles"] });
+
+        if (poiFeatures.length > 0) {
+          return;
+        }
+
+        selectArea(pickVisibleAreaFeature(map, event.point, is3dRef.current), onAreaSelect);
+      });
       map.on("click", "poi-circles", (event) => {
         const feature = event.features?.[0];
         const coordinates = feature?.geometry.type === "Point" ? feature.geometry.coordinates : null;
@@ -260,21 +271,21 @@ export function MapPanel({
           .addTo(map);
       });
 
-      map.on("mouseenter", "areas-fill", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mousemove", "areas-fill", (event) => {
-        const feature = event.features?.[0];
+      map.on("mousemove", (event: MapMouseEvent) => {
+        const feature = pickVisibleAreaFeature(map, event.point, is3dRef.current);
 
         if (!feature) {
+          map.getCanvas().style.cursor = "";
+          clearHoverFeature(map, hoverFeatureIdRef);
           setHoverTooltip(null);
           return;
         }
 
+        map.getCanvas().style.cursor = "pointer";
         updateHoverFeature(map, hoverFeatureIdRef, feature);
         setHoverTooltip(createHoverTooltip(feature, event.point.x, event.point.y, metricRef.current, metricPropertyRef.current, localeRef.current));
       });
-      map.on("mouseleave", "areas-fill", () => {
+      map.on("mouseout", () => {
         map.getCanvas().style.cursor = "";
         clearHoverFeature(map, hoverFeatureIdRef);
         setHoverTooltip(null);
@@ -428,6 +439,28 @@ function selectArea(feature: MapGeoJSONFeature | undefined, onAreaSelect: (areaI
   if (typeof areaId === "string") {
     onAreaSelect(areaId);
   }
+}
+
+function pickVisibleAreaFeature(
+  map: MapLibreMap,
+  point: PointLike,
+  is3d: boolean
+): MapGeoJSONFeature | undefined {
+  const layers = is3d ? ["areas-extrusion", "areas-fill"] : ["areas-fill"];
+
+  for (const layer of layers) {
+    if (!map.getLayer(layer)) {
+      continue;
+    }
+
+    const feature = map.queryRenderedFeatures(point, { layers: [layer] })[0];
+
+    if (feature) {
+      return feature;
+    }
+  }
+
+  return undefined;
 }
 
 function selectAreaAtSearchPoint(
