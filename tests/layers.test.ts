@@ -20,7 +20,7 @@ describe("map layer expressions", () => {
     expect(expression).toEqual([
       "interpolate",
       ["linear"],
-      ["get", "value"],
+      ["to-number", ["get", "value"]],
       10000,
       1800,
       20000,

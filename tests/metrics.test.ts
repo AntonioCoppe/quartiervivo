@@ -38,18 +38,19 @@ describe("metric helpers", () => {
   });
 
   it("formats metric values for the UI", () => {
-    expect(formatMetricValue(30524, metrics[0])).toBe("30.524 EUR");
-    expect(formatMetricValue(null, metrics[0])).toBe("N/A");
-    expect(formatMetricValue(Number.NaN, metrics[0])).toBe("N/A");
+    const incomeMetric = metrics.find((metric) => metric.id === "income_per_taxpayer") ?? metrics[0];
+    expect(formatMetricValue(30524, incomeMetric)).toBe("30.524€");
+    expect(formatMetricValue(null, incomeMetric)).toBe("N/D");
+    expect(formatMetricValue(Number.NaN, incomeMetric, "en")).toBe("N/A");
     expect(
       formatMetricValue(42.445, {
-        ...metrics[0],
+        ...incomeMetric,
         unit: "percent"
       })
     ).toBe("42,4%");
     expect(
       formatMetricValue(1234.56, {
-        ...metrics[0],
+        ...incomeMetric,
         unit: "count"
       })
     ).toBe("1.234,6");
