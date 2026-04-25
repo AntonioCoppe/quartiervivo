@@ -39,7 +39,6 @@ interface SidebarProps {
   readonly onCitySelect: (city: CityShortcut) => void;
   readonly onCollapse: () => void;
   readonly onMetricChange: (metricId: string) => void;
-  readonly onMiniMapSelect: (center: readonly [number, number]) => void;
   readonly onTogglePoi: (category: PoiCategory) => void;
 }
 
@@ -111,7 +110,6 @@ export function Sidebar({
   onCitySelect,
   onCollapse,
   onMetricChange,
-  onMiniMapSelect,
   onTogglePoi
 }: SidebarProps) {
   const labels = sectionLabels[locale];
@@ -148,7 +146,7 @@ export function Sidebar({
 
       <section className="sidebar-section" aria-labelledby="view-label">
         <h2 id="view-label">{labels.view}</h2>
-        <MiniMap activeCity={activeCity} bounds={viewportBounds} onSelect={onMiniMapSelect} />
+        <MiniMap activeCity={activeCity} bounds={viewportBounds} />
       </section>
 
       <section className="sidebar-section" aria-labelledby="jump-label">
@@ -331,7 +329,6 @@ function MetricPicker({ locale, metric, metricGroups, metrics, onMetricChange }:
 interface MiniMapProps {
   readonly activeCity: CityShortcut;
   readonly bounds: readonly [number, number, number, number] | null;
-  readonly onSelect: (center: readonly [number, number]) => void;
 }
 
 const miniMapBounds = {
@@ -406,16 +403,14 @@ const sicily = [
   [12.45, 38.05]
 ] as const;
 
-function MiniMap({ activeCity, bounds, onSelect }: MiniMapProps) {
+function MiniMap({ activeCity, bounds }: MiniMapProps) {
   const box = bounds ? projectBounds(bounds) : null;
   const activePoint = projectPoint(activeCity.center);
 
   return (
-    <button
+    <div
       className="mini-map"
-      type="button"
       aria-label={`Current view: ${activeCity.name}`}
-      onClick={() => onSelect(activeCity.center)}
     >
       <svg viewBox="0 0 180 150" role="img" aria-label={`Current view: ${activeCity.name}`}>
         <path className="mini-italy-shape" d={createPath(mainlandItaly)} />
@@ -433,7 +428,7 @@ function MiniMap({ activeCity, bounds, onSelect }: MiniMapProps) {
         ) : null}
         <circle className="mini-active-dot" cx={activePoint.x} cy={activePoint.y} r="3.4" />
       </svg>
-    </button>
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ test("renders the PMTiles-backed WikiBarrio-style shell", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByLabel("Product").getByRole("heading", { name: "MappaQuartieri" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /\$ Average income per taxpayer/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /\$ Declared income per capita/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Toggle 3D" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Roma" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Milano" })).toBeVisible();
@@ -15,7 +15,7 @@ test("renders the PMTiles-backed WikiBarrio-style shell", async ({ page }) => {
 test("metric picker filters grouped metrics and updates the selected variable", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: /\$ Average income per taxpayer/ }).click();
+  await page.getByRole("button", { name: /\$ Declared income per capita/ }).click();
   await page.getByPlaceholder("Search variables...").fill("education");
   await page.getByRole("option", { name: "Population with higher education (%) 2023" }).click();
 
@@ -79,5 +79,5 @@ test("about modal opens and the sidebar can collapse on mobile", async ({ page }
   await page.getByRole("button", { name: "Collapse sidebar" }).click();
   await expect(page.getByRole("button", { name: "Open sidebar" })).toBeVisible();
   await page.getByRole("button", { name: "Open sidebar" }).click();
-  await expect(page.getByRole("button", { name: /\$ Average income per taxpayer/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /\$ Declared income per capita/ })).toBeVisible();
 });

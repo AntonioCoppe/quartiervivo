@@ -177,15 +177,6 @@ export default function App() {
     setSidebarCollapsed(false);
   };
 
-  const handleMiniMapSelect = (center: readonly [number, number]) => {
-    setFlyToRequest({
-      id: Date.now(),
-      center,
-      zoom: 7.6,
-      selectAtCenter: false
-    });
-  };
-
   const handleResultSelect = (result: GeocoderResult) => {
     setSearchStatus(labels.searchMoved);
     setFlyToRequest({
@@ -244,7 +235,6 @@ export default function App() {
         onCitySelect={handleCitySelect}
         onCollapse={() => setSidebarCollapsed(true)}
         onMetricChange={setSelectedMetricId}
-        onMiniMapSelect={handleMiniMapSelect}
         onTogglePoi={handleTogglePoi}
       />
 
