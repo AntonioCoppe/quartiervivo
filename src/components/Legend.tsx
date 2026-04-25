@@ -14,8 +14,8 @@ export function Legend({ domain, locale, metric }: LegendProps) {
     <div className="legend" aria-label="Map legend">
       <span>{getLocalizedText(metric.shortLabel, locale)}</span>
       <div className="legend-ramp" aria-hidden="true" />
-      {stops.map((stop) => (
-        <b key={stop}>{formatMetricValue(stop, metric, locale)}</b>
+      {stops.map((stop, index) => (
+        <b key={`${stop}-${index}`}>{formatMetricValue(stop, metric, locale)}</b>
       ))}
       <span className="na-dot" aria-hidden="true" />
       <span>{locale === "it" ? "N/D" : "N/A"}</span>

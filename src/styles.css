@@ -1038,9 +1038,9 @@ button {
   .details-panel {
     left: 12px;
     right: 12px;
-    bottom: 12px;
+    bottom: calc(48vh + 24px);
     width: auto;
-    max-height: 52vh;
+    max-height: calc(52vh - 64px);
   }
 
   .map-credit {
