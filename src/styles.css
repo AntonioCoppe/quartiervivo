@@ -1022,6 +1022,11 @@ button {
     width: calc(100vw - 112px);
   }
 
+  .app-shell.sidebar-collapsed .address-search {
+    left: 52px;
+    width: calc(100vw - 152px);
+  }
+
   .top-controls {
     right: 12px;
   }
