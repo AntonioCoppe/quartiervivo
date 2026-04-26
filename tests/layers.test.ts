@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   choroplethColors,
   createExtrusionHeightExpression,
+  createHoverColorExpression,
   createIncomeColorExpression
 } from "../src/map/layers";
 
@@ -12,6 +13,18 @@ describe("map layer expressions", () => {
     expect(expression).toContain(choroplethColors.missing);
     expect(JSON.stringify(expression)).toContain(choroplethColors.low);
     expect(JSON.stringify(expression)).toContain(choroplethColors.high);
+  });
+
+  it("can wrap choropleth color with a feature-state hover highlight", () => {
+    const baseExpression = createIncomeColorExpression([10000, 30000]);
+    const expression = createHoverColorExpression(baseExpression);
+
+    expect(expression).toEqual([
+      "case",
+      ["boolean", ["feature-state", "hover"], false],
+      "#f2c94c",
+      baseExpression
+    ]);
   });
 
   it("creates an extrusion expression from a numeric domain", () => {

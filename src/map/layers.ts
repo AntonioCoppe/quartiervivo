@@ -9,6 +9,11 @@ export const choroplethColors = {
   missing: "#d8d8d8"
 } as const;
 
+export const hoverHighlightColors = {
+  light: "#f2c94c",
+  dark: "#ffe176"
+} as const;
+
 export function createIncomeColorExpression(
   domain: readonly [number, number],
   property = "value",
@@ -56,6 +61,18 @@ export function createIncomeColorExpression(
       numericStops[4] ?? numericStops[3],
       choroplethColors.high
     ]
+  ];
+}
+
+export function createHoverColorExpression(
+  baseExpression: ExpressionSpecification,
+  theme: "light" | "dark" = "light"
+): ExpressionSpecification {
+  return [
+    "case",
+    ["boolean", ["feature-state", "hover"], false],
+    hoverHighlightColors[theme],
+    baseExpression
   ];
 }
 

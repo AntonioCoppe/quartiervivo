@@ -3,6 +3,7 @@ import maplibregl, {
   type Map as MapLibreMap,
   type MapGeoJSONFeature,
   type MapMouseEvent,
+  type ExpressionSpecification,
   type PointLike,
   type Popup
 } from "maplibre-gl";
@@ -11,6 +12,7 @@ import { Protocol } from "pmtiles";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import {
   createExtrusionHeightExpression,
+  createHoverColorExpression,
   createIncomeColorExpression
 } from "../map/layers";
 import { formatMetricValue, getLocalizedText, getMetricColorStops } from "../domain/metrics";
@@ -87,6 +89,61 @@ function createPoiGeoJson(pois: readonly PoiFeature[]) {
   };
 }
 
+function createAreaColorExpression(
+  domain: readonly [number, number],
+  metricProperty: string,
+  theme: ThemeMode,
+  metricStops: readonly number[]
+): ExpressionSpecification {
+  return createHoverColorExpression(
+    createIncomeColorExpression(domain, metricProperty, theme, metricStops),
+    theme
+  );
+}
+
+function createFillOpacityExpression(theme: ThemeMode): ExpressionSpecification {
+  return [
+    "case",
+    ["boolean", ["feature-state", "hover"], false],
+    theme === "dark" ? 0.86 : 0.9,
+    theme === "dark" ? 0.62 : 0.72
+  ];
+}
+
+function createOutlineColorExpression(
+  theme: ThemeMode,
+  selectedAreaId: string | null
+): ExpressionSpecification {
+  return [
+    "case",
+    ["==", ["get", "id"], selectedAreaId ?? ""],
+    theme === "dark" ? "#f4f5f3" : "#14181c",
+    ["boolean", ["feature-state", "hover"], false],
+    theme === "dark" ? "#ffe176" : "#c18816",
+    theme === "dark" ? "#22272b" : "#ffffff"
+  ];
+}
+
+function createOutlineWidthExpression(selectedAreaId: string | null): ExpressionSpecification {
+  return [
+    "case",
+    ["==", ["get", "id"], selectedAreaId ?? ""],
+    2.25,
+    ["boolean", ["feature-state", "hover"], false],
+    1.7,
+    0.45
+  ];
+}
+
+function updateOutlinePaint(
+  map: MapLibreMap,
+  theme: ThemeMode,
+  selectedAreaId: string | null
+) {
+  map.setPaintProperty("areas-outline", "line-color", createOutlineColorExpression(theme, selectedAreaId));
+  map.setPaintProperty("areas-outline", "line-width", createOutlineWidthExpression(selectedAreaId));
+}
+
 export function MapPanel({
   activeCity,
   domain,
@@ -110,6 +167,7 @@ export function MapPanel({
   const metricPropertyRef = useRef(metric.tileProperty ?? metric.id);
   const is3dRef = useRef(is3d);
   const localeRef = useRef(locale);
+  const selectedAreaIdRef = useRef(selectedAreaId);
   const [mapError, setMapError] = useState<string | null>(null);
   const [hoverTooltip, setHoverTooltip] = useState<{
     readonly x: number;
@@ -131,7 +189,8 @@ export function MapPanel({
     metricPropertyRef.current = metricProperty;
     is3dRef.current = is3d;
     localeRef.current = locale;
-  }, [is3d, locale, metric, metricProperty]);
+    selectedAreaIdRef.current = selectedAreaId;
+  }, [is3d, locale, metric, metricProperty, selectedAreaId]);
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current) {
@@ -186,8 +245,8 @@ export function MapPanel({
         source: "areas",
         "source-layer": areaSourceLayer,
         paint: {
-          "fill-color": createIncomeColorExpression(domain, metricProperty, theme, metricStops),
-          "fill-opacity": theme === "dark" ? 0.62 : 0.72
+          "fill-color": createAreaColorExpression(domain, metricProperty, theme, metricStops),
+          "fill-opacity": createFillOpacityExpression(theme)
         }
       });
       map.addLayer({
@@ -197,7 +256,7 @@ export function MapPanel({
         "source-layer": areaSourceLayer,
         minzoom: 7,
         paint: {
-          "fill-extrusion-color": createIncomeColorExpression(domain, metricProperty, theme, metricStops),
+          "fill-extrusion-color": createAreaColorExpression(domain, metricProperty, theme, metricStops),
           "fill-extrusion-height": createExtrusionHeightExpression(domain, metricProperty, is3d, metricStops),
           "fill-extrusion-base": 0,
           "fill-extrusion-opacity": is3d ? 0.78 : 0
@@ -209,9 +268,9 @@ export function MapPanel({
         source: "areas",
         "source-layer": areaSourceLayer,
         paint: {
-          "line-color": theme === "dark" ? "#22272b" : "#ffffff",
+          "line-color": createOutlineColorExpression(theme, selectedAreaIdRef.current),
           "line-opacity": 0.65,
-          "line-width": 0.45
+          "line-width": createOutlineWidthExpression(selectedAreaIdRef.current)
         }
       });
 
@@ -333,12 +392,12 @@ export function MapPanel({
     }
 
     if (map.getLayer("areas-fill")) {
-      map.setPaintProperty("areas-fill", "fill-color", createIncomeColorExpression(domain, metricProperty, theme, metricStops));
-      map.setPaintProperty("areas-fill", "fill-opacity", theme === "dark" ? 0.62 : 0.72);
+      map.setPaintProperty("areas-fill", "fill-color", createAreaColorExpression(domain, metricProperty, theme, metricStops));
+      map.setPaintProperty("areas-fill", "fill-opacity", createFillOpacityExpression(theme));
     }
 
     if (map.getLayer("areas-extrusion")) {
-      map.setPaintProperty("areas-extrusion", "fill-extrusion-color", createIncomeColorExpression(domain, metricProperty, theme, metricStops));
+      map.setPaintProperty("areas-extrusion", "fill-extrusion-color", createAreaColorExpression(domain, metricProperty, theme, metricStops));
       map.setPaintProperty(
         "areas-extrusion",
         "fill-extrusion-height",
@@ -348,7 +407,7 @@ export function MapPanel({
     }
 
     if (map.getLayer("areas-outline")) {
-      map.setPaintProperty("areas-outline", "line-color", theme === "dark" ? "#22272b" : "#ffffff");
+      updateOutlinePaint(map, theme, selectedAreaIdRef.current);
     }
   }, [domain, is3d, metricProperty, metricStops, theme]);
 
@@ -370,18 +429,7 @@ export function MapPanel({
       return;
     }
 
-    map.setPaintProperty("areas-outline", "line-color", [
-      "case",
-      ["==", ["get", "id"], selectedAreaId ?? ""],
-      theme === "dark" ? "#f4f5f3" : "#14181c",
-      theme === "dark" ? "#22272b" : "#ffffff"
-    ]);
-    map.setPaintProperty("areas-outline", "line-width", [
-      "case",
-      ["==", ["get", "id"], selectedAreaId ?? ""],
-      2,
-      0.45
-    ]);
+    updateOutlinePaint(map, theme, selectedAreaId);
   }, [selectedAreaId, theme]);
 
   useEffect(() => {
