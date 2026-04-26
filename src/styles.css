@@ -12,6 +12,15 @@
   box-sizing: border-box;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -41,6 +50,7 @@ button {
   display: grid;
   grid-template-columns: 318px minmax(0, 1fr);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   color: var(--text);
 }
@@ -85,13 +95,28 @@ button {
 
 .brand-block {
   display: grid;
-  gap: 28px;
+  gap: 16px;
 }
 
 .brand-row {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.brand-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-wordmark {
+  display: block;
+  width: min(190px, 100%);
+  height: auto;
+  flex: 0 1 auto;
 }
 
 .brand-row h1 {
@@ -485,6 +510,7 @@ button {
   position: relative;
   min-width: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   background: var(--map-bg);
 }
@@ -579,7 +605,7 @@ button {
 
 .top-controls {
   position: absolute;
-  z-index: 8;
+  z-index: 11;
   top: 20px;
   right: 20px;
   display: flex;
@@ -1116,6 +1142,12 @@ button {
   font-size: 32px;
 }
 
+.splash-logo {
+  width: min(360px, calc(100vw - 72px));
+  height: auto;
+  margin: 0 auto;
+}
+
 .splash-screen p,
 .splash-screen span {
   margin: 0;
@@ -1248,42 +1280,98 @@ button {
 
   .sidebar {
     position: absolute;
-    inset: auto 12px 12px 12px;
-    width: auto;
-    max-height: 48vh;
-    border: 1px solid var(--panel-line);
-    border-radius: 8px;
-    padding: 14px;
+    z-index: 12;
+    inset: 0 auto 0 0;
+    width: min(340px, calc(100vw - 44px));
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-right: 1px solid var(--panel-line);
+    border-radius: 0;
+    padding: 16px;
+    box-shadow: 14px 0 36px rgba(40, 44, 48, 0.18);
   }
 
   .sidebar.collapsed {
-    transform: translateY(calc(100% + 20px));
+    transform: translateX(calc(-100% - 20px));
   }
 
   .brand-block {
-    gap: 8px;
+    gap: 10px;
+  }
+
+  .brand-row {
+    align-items: center;
+  }
+
+  .brand-identity {
+    flex: 1 1 auto;
+  }
+
+  .brand-wordmark {
+    width: min(210px, 100%);
+  }
+
+  .brand-row h1 {
+    overflow: hidden;
+    font-size: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .collapse-button {
+    flex: 0 0 32px;
   }
 
   .brand-block p,
-  .mini-map,
   .selected-summary,
   .featured-section,
   .sidebar-footer {
     display: none;
   }
 
+  .mini-map {
+    height: 132px;
+  }
+
   .address-search {
     left: 12px;
-    width: calc(100vw - 112px);
+    right: 12px;
+    top: 12px;
+    width: auto;
   }
 
   .app-shell.sidebar-collapsed .address-search {
     left: 52px;
-    width: calc(100vw - 152px);
+    right: 12px;
+    width: auto;
   }
 
   .top-controls {
-    right: 12px;
+    top: 64px;
+    right: auto;
+    left: 12px;
+    flex-direction: column;
+  }
+
+  .control-button {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    border-right: 0;
+    border-bottom: 1px solid var(--panel-line);
+  }
+
+  .control-button.language {
+    width: 34px;
+  }
+
+  .control-button.language span {
+    display: none;
+  }
+
+  .control-button:last-child {
+    border-bottom: 0;
   }
 
   .legend {
@@ -1292,18 +1380,54 @@ button {
 
   .selection-card {
     left: 12px;
-    bottom: calc(48vh + 24px);
+    right: 12px;
+    bottom: 16px;
+    min-width: 0;
   }
 
   .details-panel {
-    left: 12px;
-    right: 12px;
+    z-index: 10;
+    left: 0;
+    right: 0;
     top: auto;
-    bottom: calc(48vh + 24px);
+    bottom: 0;
     width: auto;
-    max-height: calc(52vh - 64px);
+    max-height: min(72vh, 620px);
+    max-height: min(72dvh, 620px);
     border: 1px solid var(--panel-line);
-    border-radius: 8px;
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .details-header {
+    min-height: 54px;
+    padding-left: 14px;
+  }
+
+  .details-header button {
+    height: 54px;
+  }
+
+  .details-title {
+    padding: 14px;
+  }
+
+  .details-title h2 {
+    font-size: 24px;
+  }
+
+  .detail-trend,
+  .detail-trend.tile,
+  .age-structure {
+    padding: 14px;
+  }
+
+  .detail-value-line strong {
+    font-size: 34px;
+  }
+
+  .detail-value-line.compact strong {
+    font-size: 24px;
   }
 
   .map-credit {
@@ -1312,11 +1436,15 @@ button {
 }
 
 @media (max-width: 560px) {
+  .top-controls {
+    top: 64px;
+  }
+
   .detail-grid {
     grid-template-columns: 1fr;
   }
 
-  .detail-grid .detail-metric {
+  .detail-grid .detail-trend {
     border-right: 0;
   }
 

@@ -121,7 +121,10 @@ export function Sidebar({
     <aside className={collapsed ? "sidebar collapsed" : "sidebar"} aria-hidden={collapsed}>
       <section className="brand-block" aria-label="Product">
         <div className="brand-row">
-          <h1>QuartierVivo</h1>
+          <div className="brand-identity">
+            <img className="brand-wordmark" src="/logo-full.png" alt="QuartierVivo" />
+            <h1 className="sr-only">QuartierVivo</h1>
+          </div>
           <button
             className="collapse-button"
             type="button"

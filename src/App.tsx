@@ -40,6 +40,8 @@ const poiCategories: readonly PoiCategory[] = [
   "parks"
 ];
 
+const compactViewportQuery = "(max-width: 940px)";
+
 interface AppData {
   readonly areas: readonly NeighborhoodArea[];
   readonly areaDetails: Record<string, AreaDetail>;
@@ -92,6 +94,10 @@ function createDefaultPoiState(): Record<PoiCategory, boolean> {
   };
 }
 
+function isCompactViewport() {
+  return typeof window !== "undefined" && window.matchMedia(compactViewportQuery).matches;
+}
+
 export default function App() {
   const [appData, setAppData] = useState<AppData | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -102,7 +108,7 @@ export default function App() {
   const [locale, setLocale] = useState<LocaleCode>("en");
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [is3d, setIs3d] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => isCompactViewport());
   const [aboutOpen, setAboutOpen] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [viewportBounds, setViewportBounds] = useState<readonly [number, number, number, number] | null>(null);
@@ -126,7 +132,7 @@ export default function App() {
           metrics: catalog.metrics,
           pois
         });
-        setSelectedAreaId(areas.find((area) => area.id === "comune-058091")?.id ?? areas[0]?.id ?? null);
+        setSelectedAreaId(isCompactViewport() ? null : areas.find((area) => area.id === "comune-058091")?.id ?? areas[0]?.id ?? null);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -174,7 +180,12 @@ export default function App() {
 
   const handleCitySelect = (city: CityShortcut) => {
     setActiveCity(city);
-    setSidebarCollapsed(false);
+    setSidebarCollapsed(isCompactViewport());
+  };
+
+  const handleMetricChange = (metricId: string) => {
+    setSelectedMetricId(metricId);
+    setSidebarCollapsed(isCompactViewport());
   };
 
   const handleResultSelect = (result: GeocoderResult) => {
@@ -234,7 +245,7 @@ export default function App() {
         viewportBounds={viewportBounds}
         onCitySelect={handleCitySelect}
         onCollapse={() => setSidebarCollapsed(true)}
-        onMetricChange={setSelectedMetricId}
+        onMetricChange={handleMetricChange}
         onTogglePoi={handleTogglePoi}
       />
 
@@ -336,7 +347,8 @@ export default function App() {
 
         {loading ? (
           <div className="splash-screen" role="status" aria-live="polite">
-            <h2>QuartierVivo</h2>
+            <img className="splash-logo" src="/logo-full.png" alt="QuartierVivo" />
+            <h2 className="sr-only">QuartierVivo</h2>
             <p>{labels.splash}</p>
             <span>{labels.loadingDetail}</span>
           </div>
