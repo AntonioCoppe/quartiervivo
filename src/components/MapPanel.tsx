@@ -12,7 +12,6 @@ import { Protocol } from "pmtiles";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import {
   createExtrusionHeightExpression,
-  createHoverColorExpression,
   createIncomeColorExpression
 } from "../map/layers";
 import { formatMetricValue, getLocalizedText, getMetricColorStops } from "../domain/metrics";
@@ -44,7 +43,7 @@ interface MapPanelProps {
 
 const baseMapStyle =
   import.meta.env.VITE_BASEMAP_STYLE_URL ?? "https://tiles.openfreemap.org/styles/liberty";
-const areaPmtilesUrl = "pmtiles:///data/areas.pmtiles";
+const areaPmtilesUrl = "pmtiles:///data/areas.pmtiles?v=2026-04-26-asc";
 const areaSourceLayer = "areas";
 
 const poiColors: Record<PoiCategory, string> = {
@@ -93,38 +92,96 @@ function createAreaColorExpression(
   domain: readonly [number, number],
   metricProperty: string,
   theme: ThemeMode,
-  metricStops: readonly number[]
+  metricStops: readonly number[],
+  highlightOnHover = true,
+  selectedAreaId: string | null = null
 ): ExpressionSpecification {
-  return createHoverColorExpression(
-    createIncomeColorExpression(domain, metricProperty, theme, metricStops),
-    theme
-  );
-}
+  const baseExpression = createIncomeColorExpression(domain, metricProperty, theme, metricStops);
+  const selectedColor = theme === "dark" ? "#ffd857" : "#f2c94c";
 
-function createFillOpacityExpression(theme: ThemeMode): ExpressionSpecification {
+  if (!highlightOnHover && !selectedAreaId) {
+    return baseExpression;
+  }
+
   return [
     "case",
+    ["==", ["get", "id"], selectedAreaId ?? ""],
+    selectedColor,
+    ...(highlightOnHover
+      ? [
+          ["boolean", ["feature-state", "hover"], false],
+          theme === "dark" ? "#ffe176" : "#f5d76e"
+        ]
+      : []),
+    baseExpression
+  ] as ExpressionSpecification;
+}
+
+function createFillOpacityExpression(
+  theme: ThemeMode,
+  highlightOnHover: boolean,
+  selectedAreaId: string | null = null
+): number | ExpressionSpecification {
+  const baseOpacity = theme === "dark" ? 0.62 : 0.72;
+
+  if (!highlightOnHover && !selectedAreaId) {
+    return baseOpacity;
+  }
+
+  return [
+    "case",
+    ["==", ["get", "id"], selectedAreaId ?? ""],
+    theme === "dark" ? 0.9 : 0.94,
     ["boolean", ["feature-state", "hover"], false],
     theme === "dark" ? 0.86 : 0.9,
-    theme === "dark" ? 0.62 : 0.72
+    baseOpacity
   ];
+}
+
+function createExtrusionOpacity(is3d: boolean): number {
+  return is3d ? 0.92 : 0;
 }
 
 function createOutlineColorExpression(
   theme: ThemeMode,
-  selectedAreaId: string | null
+  selectedAreaId: string | null,
+  highlightOnHover: boolean
 ): ExpressionSpecification {
+  const selectedColor = theme === "dark" ? "#f4f5f3" : "#14181c";
+  const baseColor = theme === "dark" ? "#22272b" : "#ffffff";
+
+  if (!highlightOnHover) {
+    return [
+      "case",
+      ["==", ["get", "id"], selectedAreaId ?? ""],
+      selectedColor,
+      baseColor
+    ];
+  }
+
   return [
     "case",
     ["==", ["get", "id"], selectedAreaId ?? ""],
-    theme === "dark" ? "#f4f5f3" : "#14181c",
+    selectedColor,
     ["boolean", ["feature-state", "hover"], false],
     theme === "dark" ? "#ffe176" : "#c18816",
-    theme === "dark" ? "#22272b" : "#ffffff"
+    baseColor
   ];
 }
 
-function createOutlineWidthExpression(selectedAreaId: string | null): ExpressionSpecification {
+function createOutlineWidthExpression(
+  selectedAreaId: string | null,
+  highlightOnHover: boolean
+): ExpressionSpecification {
+  if (!highlightOnHover) {
+    return [
+      "case",
+      ["==", ["get", "id"], selectedAreaId ?? ""],
+      2.25,
+      0.45
+    ];
+  }
+
   return [
     "case",
     ["==", ["get", "id"], selectedAreaId ?? ""],
@@ -138,10 +195,11 @@ function createOutlineWidthExpression(selectedAreaId: string | null): Expression
 function updateOutlinePaint(
   map: MapLibreMap,
   theme: ThemeMode,
-  selectedAreaId: string | null
+  selectedAreaId: string | null,
+  highlightOnHover: boolean
 ) {
-  map.setPaintProperty("areas-outline", "line-color", createOutlineColorExpression(theme, selectedAreaId));
-  map.setPaintProperty("areas-outline", "line-width", createOutlineWidthExpression(selectedAreaId));
+  map.setPaintProperty("areas-outline", "line-color", createOutlineColorExpression(theme, selectedAreaId, highlightOnHover));
+  map.setPaintProperty("areas-outline", "line-width", createOutlineWidthExpression(selectedAreaId, highlightOnHover));
 }
 
 export function MapPanel({
@@ -245,8 +303,15 @@ export function MapPanel({
         source: "areas",
         "source-layer": areaSourceLayer,
         paint: {
-          "fill-color": createAreaColorExpression(domain, metricProperty, theme, metricStops),
-          "fill-opacity": createFillOpacityExpression(theme)
+          "fill-color": createAreaColorExpression(
+            domain,
+            metricProperty,
+            theme,
+            metricStops,
+            !is3d,
+            !is3d ? selectedAreaIdRef.current : null
+          ),
+          "fill-opacity": createFillOpacityExpression(theme, !is3d, !is3d ? selectedAreaIdRef.current : null)
         }
       });
       map.addLayer({
@@ -256,10 +321,17 @@ export function MapPanel({
         "source-layer": areaSourceLayer,
         minzoom: 7,
         paint: {
-          "fill-extrusion-color": createAreaColorExpression(domain, metricProperty, theme, metricStops),
+          "fill-extrusion-color": createAreaColorExpression(
+            domain,
+            metricProperty,
+            theme,
+            metricStops,
+            true,
+            selectedAreaIdRef.current
+          ),
           "fill-extrusion-height": createExtrusionHeightExpression(domain, metricProperty, is3d, metricStops),
           "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": is3d ? 0.78 : 0
+          "fill-extrusion-opacity": createExtrusionOpacity(is3d)
         }
       });
       map.addLayer({
@@ -268,9 +340,9 @@ export function MapPanel({
         source: "areas",
         "source-layer": areaSourceLayer,
         paint: {
-          "line-color": createOutlineColorExpression(theme, selectedAreaIdRef.current),
+          "line-color": createOutlineColorExpression(theme, selectedAreaIdRef.current, !is3d),
           "line-opacity": 0.65,
-          "line-width": createOutlineWidthExpression(selectedAreaIdRef.current)
+          "line-width": createOutlineWidthExpression(selectedAreaIdRef.current, !is3d)
         }
       });
 
@@ -392,22 +464,30 @@ export function MapPanel({
     }
 
     if (map.getLayer("areas-fill")) {
-      map.setPaintProperty("areas-fill", "fill-color", createAreaColorExpression(domain, metricProperty, theme, metricStops));
-      map.setPaintProperty("areas-fill", "fill-opacity", createFillOpacityExpression(theme));
+      map.setPaintProperty(
+        "areas-fill",
+        "fill-color",
+        createAreaColorExpression(domain, metricProperty, theme, metricStops, !is3d, !is3d ? selectedAreaIdRef.current : null)
+      );
+      map.setPaintProperty("areas-fill", "fill-opacity", createFillOpacityExpression(theme, !is3d, !is3d ? selectedAreaIdRef.current : null));
     }
 
     if (map.getLayer("areas-extrusion")) {
-      map.setPaintProperty("areas-extrusion", "fill-extrusion-color", createAreaColorExpression(domain, metricProperty, theme, metricStops));
+      map.setPaintProperty(
+        "areas-extrusion",
+        "fill-extrusion-color",
+        createAreaColorExpression(domain, metricProperty, theme, metricStops, true, selectedAreaIdRef.current)
+      );
       map.setPaintProperty(
         "areas-extrusion",
         "fill-extrusion-height",
         createExtrusionHeightExpression(domain, metricProperty, is3d, metricStops)
       );
-      map.setPaintProperty("areas-extrusion", "fill-extrusion-opacity", is3d ? 0.78 : 0);
+      map.setPaintProperty("areas-extrusion", "fill-extrusion-opacity", createExtrusionOpacity(is3d));
     }
 
     if (map.getLayer("areas-outline")) {
-      updateOutlinePaint(map, theme, selectedAreaIdRef.current);
+      updateOutlinePaint(map, theme, selectedAreaIdRef.current, !is3d);
     }
   }, [domain, is3d, metricProperty, metricStops, theme]);
 
@@ -429,8 +509,25 @@ export function MapPanel({
       return;
     }
 
-    updateOutlinePaint(map, theme, selectedAreaId);
-  }, [selectedAreaId, theme]);
+    if (map.getLayer("areas-fill")) {
+      map.setPaintProperty(
+        "areas-fill",
+        "fill-color",
+        createAreaColorExpression(domain, metricProperty, theme, metricStops, !is3d, !is3d ? selectedAreaId : null)
+      );
+      map.setPaintProperty("areas-fill", "fill-opacity", createFillOpacityExpression(theme, !is3d, !is3d ? selectedAreaId : null));
+    }
+
+    if (map.getLayer("areas-extrusion")) {
+      map.setPaintProperty(
+        "areas-extrusion",
+        "fill-extrusion-color",
+        createAreaColorExpression(domain, metricProperty, theme, metricStops, true, selectedAreaId)
+      );
+    }
+
+    updateOutlinePaint(map, theme, selectedAreaId, !is3d);
+  }, [domain, is3d, metricProperty, metricStops, selectedAreaId, theme]);
 
   useEffect(() => {
     const map = mapRef.current;

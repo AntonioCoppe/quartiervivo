@@ -15,11 +15,11 @@ export function AboutModal({ locale, metrics, onClose }: AboutModalProps) {
         <button className="modal-close" type="button" aria-label="Close modal" onClick={onClose}>
           <X size={16} aria-hidden="true" />
         </button>
-        <h2 id="about-title">{locale === "it" ? "Che cos'e MappaQuartieri?" : "What is MappaQuartieri?"}</h2>
+        <h2 id="about-title">{locale === "it" ? "Che cos'e QuartierVivo?" : "What is QuartierVivo?"}</h2>
         <p>
           {locale === "it"
-            ? "MappaQuartieri e uno strumento interattivo per esplorare indicatori socio-demografici italiani a livello comunale e, dove i dati sono disponibili, sub-comunale."
-            : "MappaQuartieri is an interactive visualization tool for exploring Italian socio-demographic indicators at the municipality level and, where available, below the municipality level."}
+            ? "QuartierVivo e uno strumento interattivo per esplorare indicatori socio-demografici italiani a livello comunale e, dove i dati sono disponibili, sub-comunale."
+            : "QuartierVivo is an interactive visualization tool for exploring Italian socio-demographic indicators at the municipality level and, where available, below the municipality level."}
         </p>
 
         <h3>{locale === "it" ? "Fonti dati" : "Data sources"}</h3>
@@ -27,6 +27,7 @@ export function AboutModal({ locale, metrics, onClose }: AboutModalProps) {
           <li>MEF Dipartimento delle Finanze: redditi comunali IRPEF 2024.</li>
           <li>ISTAT POSAS: popolazione residente per eta, sesso e comune 2025.</li>
           <li>ISTAT confini amministrativi: geometrie comunali generalizzate 2026.</li>
+          <li>ISTAT ASC 2021: aree subcomunali, municipi, quartieri, circoscrizioni e zone urbanistiche.</li>
           <li>OpenStreetMap contributors: punti di interesse e base geografica.</li>
         </ul>
 
@@ -54,7 +55,7 @@ export function AboutModal({ locale, metrics, onClose }: AboutModalProps) {
         </div>
 
         <footer>
-          © 2026 MappaQuartieri · Open data from MEF, ISTAT, municipal portals, and OpenStreetMap.
+          © 2026 QuartierVivo · Open data from MEF, ISTAT, municipal portals, and OpenStreetMap.
         </footer>
       </section>
     </div>

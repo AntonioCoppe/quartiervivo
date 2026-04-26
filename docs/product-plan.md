@@ -1,4 +1,4 @@
-# MappaQuartieri Product Plan
+# QuartierVivo Product Plan
 
 ## Goal
 

@@ -113,14 +113,15 @@ export function Sidebar({
   onTogglePoi
 }: SidebarProps) {
   const labels = sectionLabels[locale];
-  const topAreas = rankAreas(areas, metric.id, "desc", 3);
-  const bottomAreas = rankAreas(areas, metric.id, "asc", 3);
+  const rankingAreas = areas.filter((area) => area.areaLevel === "comune");
+  const topAreas = rankAreas(rankingAreas, metric.id, "desc", 3);
+  const bottomAreas = rankAreas(rankingAreas, metric.id, "asc", 3);
 
   return (
     <aside className={collapsed ? "sidebar collapsed" : "sidebar"} aria-hidden={collapsed}>
       <section className="brand-block" aria-label="Product">
         <div className="brand-row">
-          <h1>MappaQuartieri</h1>
+          <h1>QuartierVivo</h1>
           <button
             className="collapse-button"
             type="button"
@@ -335,73 +336,10 @@ const miniMapBounds = {
   minLng: 6.1,
   maxLng: 18.8,
   minLat: 35.35,
-  maxLat: 47.2
+  maxLat: 47.2,
+  width: 734.78979,
+  height: 867.24951
 } as const;
-
-const mainlandItaly = [
-  [7.05, 45.9],
-  [8.0, 46.45],
-  [9.1, 46.3],
-  [10.35, 46.6],
-  [11.6, 46.95],
-  [13.55, 46.45],
-  [13.1, 45.75],
-  [12.3, 45.45],
-  [12.9, 44.75],
-  [12.55, 43.75],
-  [13.25, 43.05],
-  [13.9, 42.45],
-  [14.75, 42.15],
-  [15.2, 41.45],
-  [16.05, 40.8],
-  [16.55, 40.2],
-  [17.25, 40.15],
-  [18.35, 40.65],
-  [18.45, 39.95],
-  [17.55, 39.25],
-  [16.75, 38.85],
-  [16.2, 38.05],
-  [15.75, 37.9],
-  [15.8, 38.65],
-  [15.25, 39.35],
-  [14.45, 40.15],
-  [13.85, 40.75],
-  [13.15, 41.35],
-  [12.65, 42.0],
-  [12.2, 42.85],
-  [11.65, 43.45],
-  [10.9, 44.0],
-  [9.9, 44.25],
-  [9.15, 44.4],
-  [8.35, 44.05],
-  [7.7, 44.25],
-  [7.45, 44.8],
-  [6.9, 45.15],
-  [7.05, 45.9]
-] as const;
-
-const sardinia = [
-  [8.15, 41.25],
-  [9.0, 41.2],
-  [9.65, 40.75],
-  [9.65, 39.55],
-  [9.25, 38.9],
-  [8.55, 38.85],
-  [8.15, 39.25],
-  [8.05, 40.2],
-  [8.15, 41.25]
-] as const;
-
-const sicily = [
-  [12.45, 38.05],
-  [13.45, 38.15],
-  [14.8, 37.9],
-  [15.65, 37.35],
-  [15.1, 36.75],
-  [13.95, 36.65],
-  [12.65, 37.25],
-  [12.45, 38.05]
-] as const;
 
 function MiniMap({ activeCity, bounds }: MiniMapProps) {
   const box = bounds ? projectBounds(bounds) : null;
@@ -412,10 +350,14 @@ function MiniMap({ activeCity, bounds }: MiniMapProps) {
       className="mini-map"
       aria-label={`Current view: ${activeCity.name}`}
     >
-      <svg viewBox="0 0 180 150" role="img" aria-label={`Current view: ${activeCity.name}`}>
-        <path className="mini-italy-shape" d={createPath(mainlandItaly)} />
-        <path className="mini-island" d={createPath(sardinia)} />
-        <path className="mini-island" d={createPath(sicily)} />
+      <div className="mini-map-contour mini-map-contour-outline" aria-hidden="true" />
+      <div className="mini-map-contour mini-map-contour-fill" aria-hidden="true" />
+      <svg
+        className="mini-map-overlay"
+        viewBox={`0 0 ${miniMapBounds.width} ${miniMapBounds.height}`}
+        role="img"
+        aria-label={`Current view: ${activeCity.name}`}
+      >
         {box ? (
           <rect
             className="mini-viewport"
@@ -423,10 +365,10 @@ function MiniMap({ activeCity, bounds }: MiniMapProps) {
             y={box.y}
             width={box.width}
             height={box.height}
-            rx="1"
+            rx="5"
           />
         ) : null}
-        <circle className="mini-active-dot" cx={activePoint.x} cy={activePoint.y} r="3.4" />
+        <circle className="mini-active-dot" cx={activePoint.x} cy={activePoint.y} r="16" />
       </svg>
     </div>
   );
@@ -438,27 +380,18 @@ function projectBounds(bounds: readonly [number, number, number, number]) {
   const bottomRight = projectPoint([east, south]);
 
   return {
-    x: clamp(topLeft.x, 0, 180),
-    y: clamp(topLeft.y, 0, 150),
-    width: clamp(bottomRight.x - topLeft.x, 8, 180),
-    height: clamp(bottomRight.y - topLeft.y, 8, 150)
+    x: clamp(topLeft.x, 0, miniMapBounds.width),
+    y: clamp(topLeft.y, 0, miniMapBounds.height),
+    width: clamp(bottomRight.x - topLeft.x, 32, miniMapBounds.width),
+    height: clamp(bottomRight.y - topLeft.y, 38, miniMapBounds.height)
   };
-}
-
-function createPath(points: readonly (readonly [number, number])[]): string {
-  return points
-    .map((point, index) => {
-      const projected = projectPoint(point);
-      return `${index === 0 ? "M" : "L"}${projected.x.toFixed(1)} ${projected.y.toFixed(1)}`;
-    })
-    .join(" ");
 }
 
 function projectPoint(point: readonly [number, number]) {
   const [lng, lat] = point;
   return {
-    x: ((lng - miniMapBounds.minLng) / (miniMapBounds.maxLng - miniMapBounds.minLng)) * 180,
-    y: ((miniMapBounds.maxLat - lat) / (miniMapBounds.maxLat - miniMapBounds.minLat)) * 150
+    x: ((lng - miniMapBounds.minLng) / (miniMapBounds.maxLng - miniMapBounds.minLng)) * miniMapBounds.width,
+    y: ((miniMapBounds.maxLat - lat) / (miniMapBounds.maxLat - miniMapBounds.minLat)) * miniMapBounds.height
   };
 }
 

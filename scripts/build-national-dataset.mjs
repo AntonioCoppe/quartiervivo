@@ -12,6 +12,8 @@ const processedDir = new URL("../data/processed/", import.meta.url);
 
 const currentIncomeYear = 2024;
 const currentPopulationYear = 2025;
+const subcomunePopulationYear = 2021;
+const ascLevels = [3, 2, 1];
 const incomeYears = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
 const populationYears = [2021, 2022, 2023, 2024, 2025];
 const incomeStops = [8000, 12000, 16000, 20000, 24000, 28000];
@@ -253,7 +255,7 @@ async function main() {
   const currentIncomeByIstat = incomeByYear.get(currentIncomeYear) ?? new Map();
   const currentPopulationByIstat = populationByYear.get(currentPopulationYear) ?? new Map();
 
-  const areas = identifiers
+  const comuneAreas = identifiers
     .map((row) => {
       const istatCode = firstPresent(row, codeCandidates)?.padStart(6, "0") ?? null;
 
@@ -356,20 +358,24 @@ async function main() {
       };
     })
     .filter(Boolean);
+  const subcomuneAreas = await createSubcomuneAreas(comuneAreas, files);
+  const areas = [...comuneAreas, ...subcomuneAreas];
 
-  const nationalSeries = createNationalSeries(areas, incomeByYear, populationByYear);
+  const nationalSeries = createNationalSeries(comuneAreas, incomeByYear, populationByYear);
+  const subcomuneComuneCount = new Set(subcomuneAreas.map((area) => area.parentComuneId)).size;
   const coverage = {
     generatedAt: new Date().toISOString(),
     nationalAreaLevel: "comune",
-    comuneCount: areas.length,
-    withIncome: areas.filter((area) => hasMetricValue(area, "income_per_taxpayer")).length,
-    withIncomePerCapita: areas.filter((area) => hasMetricValue(area, "income_per_capita")).length,
-    withPopulation: areas.filter((area) => area.population !== null).length,
-    withIncomeHistory: areas.filter((area) =>
+    comuneCount: comuneAreas.length,
+    withIncome: comuneAreas.filter((area) => hasMetricValue(area, "income_per_taxpayer")).length,
+    withIncomePerCapita: comuneAreas.filter((area) => hasMetricValue(area, "income_per_capita")).length,
+    withPopulation: comuneAreas.filter((area) => area.population !== null).length,
+    withIncomeHistory: comuneAreas.filter((area) =>
       createAreaSeries(area, incomeByYear, populationByYear, nationalSeries).income_per_taxpayer.values
         .filter((value) => value !== null).length > 1
     ).length,
-    subcomuneCityCount: 0
+    subcomuneCityCount: subcomuneComuneCount,
+    subcomuneAreaCount: subcomuneAreas.length
   };
   const detailRecords = Object.fromEntries(
     areas.map((area) => [
@@ -412,6 +418,145 @@ async function main() {
   await writeFile(join(outputDir.pathname, "area-details.json"), `${JSON.stringify(detailRecords, null, 2)}\n`);
   await writeFile(join(outputDir.pathname, "coverage.json"), `${JSON.stringify(coverage, null, 2)}\n`);
   console.log(coverage);
+}
+
+async function createSubcomuneAreas(comuneAreas, files) {
+  const parentsByIstat = new Map(comuneAreas.map((area) => [area.istatCode, area]));
+  const selectedRows = new Map();
+
+  for (const level of ascLevels) {
+    const ascFile = files.find((file) => new RegExp(`ASC_Liv_${level}_2021\\.csv$`, "i").test(file));
+
+    if (!ascFile) {
+      continue;
+    }
+
+    const rows = parseDelimited(await readTextAuto(ascFile), "\t");
+    const rowsByComune = groupAscRowsByComune(rows);
+
+    for (const [istatCode, comuneRows] of rowsByComune) {
+      if (!parentsByIstat.has(istatCode) || selectedRows.has(istatCode)) {
+        continue;
+      }
+
+      selectedRows.set(istatCode, {
+        level,
+        rows: comuneRows
+      });
+    }
+  }
+
+  return [...selectedRows.entries()]
+    .flatMap(([istatCode, entry]) => {
+      const parent = parentsByIstat.get(istatCode);
+
+      if (!parent) {
+        return [];
+      }
+
+      return entry.rows.map((row) => createSubcomuneArea(parent, row, entry.level)).filter(Boolean);
+    })
+    .sort((left, right) =>
+      String(left.istatCode).localeCompare(String(right.istatCode)) ||
+      Number(left.subcomuneCode) - Number(right.subcomuneCode)
+    );
+}
+
+function groupAscRowsByComune(rows) {
+  return rows.reduce((groups, row) => {
+    const istatCode = firstPresent(row, ["pro_com"])?.padStart(6, "0");
+
+    if (!istatCode) {
+      return groups;
+    }
+
+    groups.set(istatCode, [...(groups.get(istatCode) ?? []), row]);
+    return groups;
+  }, new Map());
+}
+
+function createSubcomuneArea(parent, row, level) {
+  const subcomuneCode = firstPresent(row, [`com_asc${level}`]);
+  const name = firstPresent(row, [`den_asc${level}`]) ?? subcomuneCode;
+  const type = firstPresent(row, [`tipo_asc${level}`]) ?? "";
+  const population = parseItalianNumber(firstPresent(row, ["pop21"]));
+
+  if (!subcomuneCode || !name) {
+    return null;
+  }
+
+  return {
+    id: `subcomune-${subcomuneCode}`,
+    name,
+    city: parent.city,
+    region: parent.region,
+    areaLevel: "subcomune",
+    granularity: "istat_area_subcomunale",
+    istatCode: parent.istatCode,
+    cadastralCode: parent.cadastralCode,
+    province: parent.province,
+    parentComuneId: parent.id,
+    subcomuneCode,
+    subcomuneLevel: level,
+    subcomuneKind: normalizeSubcomuneKind(type, name),
+    population,
+    sourceIds: ["istat-aree-subcomunali-2021", "mef-irpef-comune"],
+    metrics: createSubcomuneMetrics(parent, population)
+  };
+}
+
+function normalizeSubcomuneKind(type, name) {
+  const value = `${type} ${name}`.toLocaleLowerCase("it-IT");
+
+  if (value.includes("municipio")) {
+    return "municipio";
+  }
+
+  if (value.includes("circoscrizione")) {
+    return "circoscrizione";
+  }
+
+  if (value.includes("quartiere")) {
+    return "quartiere";
+  }
+
+  if (value.includes("rione")) {
+    return "rione";
+  }
+
+  if (value.includes("zona")) {
+    return "zona";
+  }
+
+  return "other";
+}
+
+function createSubcomuneMetrics(parent, population) {
+  const inheritedComuneMetricIds = new Set(["income_per_capita", "income_per_taxpayer"]);
+
+  return metricCatalog.map((metric) => {
+    if (metric.id === "resident_population") {
+      return {
+        metricId: metric.id,
+        value: population,
+        year: subcomunePopulationYear
+      };
+    }
+
+    if (inheritedComuneMetricIds.has(metric.id)) {
+      return {
+        metricId: metric.id,
+        value: findMetricValue(parent, metric.id),
+        year: metric.year
+      };
+    }
+
+    return {
+      metricId: metric.id,
+      value: null,
+      year: metric.year
+    };
+  });
 }
 
 async function createIndexByYear(files, years, findFile, createIndex) {
@@ -619,6 +764,10 @@ function createNationalSeries(areas, incomeByYear, populationByYear) {
 }
 
 function createAreaSeries(area, incomeByYear, populationByYear, nationalSeries) {
+  if (area.areaLevel === "subcomune") {
+    return createSubcomuneAreaSeries(area, incomeByYear, populationByYear, nationalSeries);
+  }
+
   const incomePerCapita = incomeYears.map((year) => {
     const income = findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode);
     const population = populationByYear.get(year)?.get(area.istatCode)?.population ?? null;
@@ -695,6 +844,70 @@ function createAreaSeries(area, incomeByYear, populationByYear, nationalSeries) 
     taxpayer_share_percent: {
       years: incomeYears,
       values: taxpayerShare,
+      nationalValues: nationalSeries.taxpayer_share_percent.values
+    }
+  };
+}
+
+function createSubcomuneAreaSeries(area, incomeByYear, populationByYear, nationalSeries) {
+  const incomePerCapita = incomeYears.map((year) => {
+    const income = findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode);
+    const population = populationByYear.get(year)?.get(area.istatCode)?.population ?? null;
+    return income?.totalIncome && population ? Math.round(income.totalIncome / population) : null;
+  });
+  const incomePerTaxpayer = incomeYears.map((year) =>
+    findIncomeRecord(incomeByYear.get(year), area.istatCode, area.cadastralCode)?.averageIncome ?? null
+  );
+  const subcomunePopulation = populationYears.map((year) =>
+    year === subcomunePopulationYear ? area.population ?? null : null
+  );
+  const emptyPopulationSeries = populationYears.map(() => null);
+  const emptyIncomeSeries = incomeYears.map(() => null);
+
+  return {
+    resident_population: {
+      years: populationYears,
+      values: subcomunePopulation,
+      nationalValues: nationalSeries.resident_population.values
+    },
+    income_per_capita: {
+      years: incomeYears,
+      values: incomePerCapita,
+      nationalValues: nationalSeries.income_per_capita.values
+    },
+    income_per_taxpayer: {
+      years: incomeYears,
+      values: incomePerTaxpayer,
+      nationalValues: nationalSeries.income_per_taxpayer.values
+    },
+    gender_ratio: {
+      years: populationYears,
+      values: emptyPopulationSeries,
+      nationalValues: nationalSeries.gender_ratio.values
+    },
+    age_65_plus_percent: {
+      years: populationYears,
+      values: emptyPopulationSeries,
+      nationalValues: nationalSeries.age_65_plus_percent.values
+    },
+    age_15_64_percent: {
+      years: populationYears,
+      values: emptyPopulationSeries,
+      nationalValues: nationalSeries.age_15_64_percent.values
+    },
+    age_under_15_percent: {
+      years: populationYears,
+      values: emptyPopulationSeries,
+      nationalValues: nationalSeries.age_under_15_percent.values
+    },
+    taxpayer_count: {
+      years: incomeYears,
+      values: emptyIncomeSeries,
+      nationalValues: nationalSeries.taxpayer_count.values
+    },
+    taxpayer_share_percent: {
+      years: incomeYears,
+      values: emptyIncomeSeries,
       nationalValues: nationalSeries.taxpayer_share_percent.values
     }
   };

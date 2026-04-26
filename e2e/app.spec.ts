@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("renders the PMTiles-backed WikiBarrio-style shell", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByLabel("Product").getByRole("heading", { name: "MappaQuartieri" })).toBeVisible();
+  await expect(page.getByLabel("Product").getByRole("heading", { name: "QuartierVivo" })).toBeVisible();
   await expect(page.getByRole("button", { name: /\$ Declared income per capita/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Toggle 3D" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Roma" })).toBeVisible();
@@ -73,7 +73,7 @@ test("about modal opens and the sidebar can collapse on mobile", async ({ page }
   await page.goto("/");
 
   await page.getByRole("button", { name: "About" }).click();
-  await expect(page.getByRole("dialog", { name: "What is MappaQuartieri?" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "What is QuartierVivo?" })).toBeVisible();
   await page.getByRole("button", { name: "Close modal" }).click();
 
   await page.getByRole("button", { name: "Collapse sidebar" }).click();

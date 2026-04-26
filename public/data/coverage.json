@@ -1,13 +1,15 @@
 {
-  "generatedAt": "2026-04-25T20:25:27.630Z",
+  "generatedAt": "2026-04-26T12:55:57.140Z",
   "nationalAreaLevel": "comune",
   "comuneCount": 7896,
   "withIncome": 7896,
   "withIncomePerCapita": 7896,
   "withPopulation": 7896,
   "withIncomeHistory": 7896,
-  "subcomuneCityCount": 0,
-  "areaGeometryCount": 7519,
+  "subcomuneCityCount": 90,
+  "subcomuneAreaCount": 1597,
+  "areaGeometryCount": 9028,
+  "subcomuneGeometryCount": 1597,
   "pmtiles": {
     "sourceLayer": "areas",
     "path": "/data/areas.pmtiles",

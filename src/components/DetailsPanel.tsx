@@ -441,7 +441,7 @@ function syntheticMetric(
 
 async function shareAreaCard(detail: AreaDetail, locale: LocaleCode, metrics: readonly MetricDefinition[]) {
   const blob = await renderAreaCard(detail, locale, metrics);
-  const fileName = `${detail.id}-mappaquartieri-card.png`;
+  const fileName = `${detail.id}-quartiervivo-card.png`;
   const file = new File([blob], fileName, { type: "image/png" });
 
   if (navigator.canShare?.({ files: [file] })) {
@@ -489,7 +489,7 @@ async function renderAreaCard(
 
   context.fillStyle = "#8d9297";
   context.font = "20px Menlo, monospace";
-  context.fillText("MappaQuartieri", 86, 116);
+  context.fillText("QuartierVivo", 86, 116);
   context.fillStyle = "#17191c";
   context.font = "700 54px Menlo, monospace";
   context.fillText(detail.name.slice(0, 24), 86, 194);

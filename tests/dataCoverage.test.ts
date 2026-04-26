@@ -11,6 +11,9 @@ interface MetricValueFixture {
 
 interface AreaFixture {
   readonly id: string;
+  readonly areaLevel: "comune" | "subcomune";
+  readonly parentComuneId?: string;
+  readonly istatCode?: string;
   readonly metrics: readonly MetricValueFixture[];
 }
 
@@ -23,8 +26,21 @@ interface AreaDetailFixture {
 
 interface CoverageFixture {
   readonly comuneCount: number;
+  readonly subcomuneAreaCount?: number;
+  readonly subcomuneGeometryCount?: number;
   readonly withIncomePerCapita: number;
   readonly withPopulation: number;
+}
+
+interface AreaFeatureCollectionFixture {
+  readonly features: readonly {
+    readonly properties?: {
+      readonly id?: string;
+      readonly areaLevel?: "comune" | "subcomune";
+      readonly parentComuneId?: string;
+      readonly istatCode?: string;
+    };
+  }[];
 }
 
 const dataDir = join(process.cwd(), "public/data");
@@ -36,25 +52,26 @@ describe("generated comune data coverage", () => {
   const areas = readJson<readonly AreaFixture[]>("national-areas.json");
   const areaDetails = readJson<Record<string, AreaDetailFixture>>("area-details.json");
   const coverage = readJson<CoverageFixture>("coverage.json");
+  const comuni = areas.filter((area) => area.areaLevel === "comune");
 
   it("contains a detail payload for every generated comune", () => {
-    const duplicateIds = areas
+    const duplicateIds = comuni
       .map((area) => area.id)
       .filter((id, index, ids) => ids.indexOf(id) !== index);
-    const missingDetailIds = areas
+    const missingDetailIds = comuni
       .filter((area) => areaDetails[area.id] === undefined)
       .map((area) => area.id);
 
-    expect(areas.length).toBeGreaterThanOrEqual(7890);
+    expect(comuni.length).toBeGreaterThanOrEqual(7890);
     expect(duplicateIds).toEqual([]);
     expect(missingDetailIds).toEqual([]);
-    expect(coverage.comuneCount).toBe(areas.length);
+    expect(coverage.comuneCount).toBe(comuni.length);
   });
 
   it("has complete source-backed values for every displayed comune metric", () => {
     const missingCountsByMetric = Object.fromEntries(
       requiredComuneMetricIds.map((metricId) => {
-        const missingCount = areas.filter((area) => {
+        const missingCount = comuni.filter((area) => {
           const areaValue = area.metrics.find((metric) => metric.metricId === metricId)?.value ?? null;
           const detailValue = areaDetails[area.id]?.metrics[metricId] ?? null;
 
@@ -68,14 +85,14 @@ describe("generated comune data coverage", () => {
     expect(missingCountsByMetric).toEqual(
       Object.fromEntries(requiredComuneMetricIds.map((metricId) => [metricId, 0]))
     );
-    expect(coverage.withIncomePerCapita).toBe(areas.length);
-    expect(coverage.withPopulation).toBe(areas.length);
+    expect(coverage.withIncomePerCapita).toBe(comuni.length);
+    expect(coverage.withPopulation).toBe(comuni.length);
   });
 
   it("keeps sparse trend history separate from current metric coverage", () => {
     const missingSeriesByMetric = Object.fromEntries(
       requiredComuneMetricIds.map((metricId) => {
-        const missingCount = areas.filter((area) => {
+        const missingCount = comuni.filter((area) => {
           const values = areaDetails[area.id]?.metricSeries?.[metricId]?.values ?? [];
           return !values.some(isFiniteMetricValue);
         }).length;
@@ -84,9 +101,9 @@ describe("generated comune data coverage", () => {
       })
     );
     const metricsWithNoTrendCoverage = Object.entries(missingSeriesByMetric)
-      .filter(([, missingCount]) => missingCount === areas.length)
+      .filter(([, missingCount]) => missingCount === comuni.length)
       .map(([metricId]) => metricId);
-    const currentValueGapsForSparseTrendAreas = areas
+    const currentValueGapsForSparseTrendAreas = comuni
       .flatMap((area) =>
         requiredComuneMetricIds.map((metricId) => {
           const values = areaDetails[area.id]?.metricSeries?.[metricId]?.values ?? [];
@@ -106,6 +123,47 @@ describe("generated comune data coverage", () => {
 
     expect(metricsWithNoTrendCoverage).toEqual([]);
     expect(currentValueGapsForSparseTrendAreas).toEqual([]);
+  });
+
+  it("splits large Italian cities using the finest available ISTAT ASC features", () => {
+    const romaSubareas = areas.filter((area) => area.parentComuneId === "comune-058091");
+    const mapAreas = readJson<AreaFeatureCollectionFixture>("areas.geojson");
+    const romaMapSubareas = mapAreas.features.filter(
+      (feature) => feature.properties?.parentComuneId === "comune-058091"
+    );
+    const romaParentMapFeature = mapAreas.features.find(
+      (feature) => feature.properties?.id === "comune-058091"
+    );
+
+    const subareasByParent = areas.reduce<Record<string, number>>((counts, area) => {
+      if (!area.parentComuneId) {
+        return counts;
+      }
+
+      return {
+        ...counts,
+        [area.parentComuneId]: (counts[area.parentComuneId] ?? 0) + 1
+      };
+    }, {});
+
+    expect(Object.keys(subareasByParent).length).toBeGreaterThanOrEqual(90);
+    expect(coverage.subcomuneAreaCount ?? 0).toBeGreaterThanOrEqual(1500);
+    expect(coverage.subcomuneGeometryCount).toBe(coverage.subcomuneAreaCount);
+    expect(romaSubareas).toHaveLength(155);
+    expect(romaSubareas.every((area) => isFiniteMetricValue(areaDetails[area.id]?.metrics.resident_population ?? null))).toBe(true);
+    expect(romaMapSubareas).toHaveLength(155);
+    expect(romaParentMapFeature).toBeUndefined();
+
+    for (const istatCode of ["001272", "015146", "010025", "037006", "048017", "063049", "072006", "082053"]) {
+      const parentId = `comune-${istatCode}`;
+      expect(subareasByParent[parentId]).toBeGreaterThan(1);
+      expect(
+        mapAreas.features.some((feature) => feature.properties?.parentComuneId === parentId)
+      ).toBe(true);
+      expect(
+        mapAreas.features.some((feature) => feature.properties?.id === parentId)
+      ).toBe(false);
+    }
   });
 });
 

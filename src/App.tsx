@@ -336,7 +336,7 @@ export default function App() {
 
         {loading ? (
           <div className="splash-screen" role="status" aria-live="polite">
-            <h2>MappaQuartieri</h2>
+            <h2>QuartierVivo</h2>
             <p>{labels.splash}</p>
             <span>{labels.loadingDetail}</span>
           </div>

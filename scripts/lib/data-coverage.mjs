@@ -11,6 +11,7 @@ export const requiredComuneMetricIds = [
 ];
 
 export function auditComuneDataCoverage({ areas, areaDetails, coverage }) {
+  const comuneAreas = areas.filter((area) => area.areaLevel !== "subcomune");
   const missingByMetric = Object.fromEntries(
     requiredComuneMetricIds.map((metricId) => [metricId, []])
   );
@@ -18,7 +19,7 @@ export function auditComuneDataCoverage({ areas, areaDetails, coverage }) {
   const missingSeries = [];
   const duplicateIds = findDuplicates(areas.map((area) => area.id));
 
-  for (const area of areas) {
+  for (const area of comuneAreas) {
     const detail = areaDetails[area.id];
 
     if (!detail) {
@@ -44,9 +45,9 @@ export function auditComuneDataCoverage({ areas, areaDetails, coverage }) {
   }
 
   const failures = [
-    coverage?.comuneCount === areas.length ? null : `coverage.comuneCount=${coverage?.comuneCount ?? "missing"} does not match areas.length=${areas.length}`,
-    coverage?.withIncomePerCapita === areas.length ? null : `coverage.withIncomePerCapita=${coverage?.withIncomePerCapita ?? "missing"} does not match areas.length=${areas.length}`,
-    coverage?.withPopulation === areas.length ? null : `coverage.withPopulation=${coverage?.withPopulation ?? "missing"} does not match areas.length=${areas.length}`,
+    coverage?.comuneCount === comuneAreas.length ? null : `coverage.comuneCount=${coverage?.comuneCount ?? "missing"} does not match comuneAreas.length=${comuneAreas.length}`,
+    coverage?.withIncomePerCapita === comuneAreas.length ? null : `coverage.withIncomePerCapita=${coverage?.withIncomePerCapita ?? "missing"} does not match comuneAreas.length=${comuneAreas.length}`,
+    coverage?.withPopulation === comuneAreas.length ? null : `coverage.withPopulation=${coverage?.withPopulation ?? "missing"} does not match comuneAreas.length=${comuneAreas.length}`,
     duplicateIds.length ? `duplicate area ids: ${duplicateIds.slice(0, 10).join(", ")}` : null,
     missingDetails.length ? `missing detail records: ${missingDetails.slice(0, 10).join(", ")}` : null,
     ...Object.entries(missingByMetric).map(([metricId, ids]) =>
@@ -58,7 +59,8 @@ export function auditComuneDataCoverage({ areas, areaDetails, coverage }) {
     ok: failures.length === 0,
     failures,
     summary: {
-      comuneCount: areas.length,
+      comuneCount: comuneAreas.length,
+      areaCount: areas.length,
       requiredMetricIds: requiredComuneMetricIds,
       missingCountsByMetric: Object.fromEntries(
         Object.entries(missingByMetric).map(([metricId, ids]) => [metricId, ids.length])

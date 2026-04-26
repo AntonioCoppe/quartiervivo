@@ -256,6 +256,7 @@ button {
 
 .mini-map {
   display: block;
+  position: relative;
   width: 100%;
   height: 184px;
   border: 1px solid var(--panel-line);
@@ -263,37 +264,54 @@ button {
   background: var(--panel-bg-soft);
   padding: 8px;
   text-align: left;
+  overflow: hidden;
 }
 
-.mini-map svg {
+.mini-map-overlay,
+.mini-map-contour {
+  position: absolute;
+  inset: 8px;
   display: block;
-  width: 100%;
-  height: 100%;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  pointer-events: none;
 }
 
-.mini-italy-shape,
-.mini-island {
-  fill: #d7d8d5;
-  stroke: #555a5e;
-  stroke-width: 1.5;
+.mini-map-contour {
+  mask: url("/italy-black-contour.svg") center / contain no-repeat;
+  -webkit-mask: url("/italy-black-contour.svg") center / contain no-repeat;
 }
 
-.dark .mini-italy-shape,
-.dark .mini-island {
-  fill: #2a3035;
-  stroke: #a5adb3;
+.mini-map-contour-outline {
+  background: #555a5e;
+  transform: scale(1.016);
+  transform-origin: center;
+}
+
+.mini-map-contour-fill {
+  background: #d7d8d5;
+}
+
+.dark .mini-map-contour-outline {
+  background: #a5adb3;
+}
+
+.dark .mini-map-contour-fill {
+  background: #2a3035;
 }
 
 .mini-viewport {
   fill: transparent;
   stroke: #151719;
-  stroke-width: 2;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
 }
 
 .mini-active-dot {
   fill: #d97862;
   stroke: #ffffff;
-  stroke-width: 1.4;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
 }
 
 .dark .mini-viewport {
